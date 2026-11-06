@@ -2,6 +2,8 @@
 const { t, asset, now } = useSite()
 const message = useState('action-message', () => '')
 const copyURL = useState('copy-url', () => '')
+const copyStatus = useState<'idle' | 'copied' | 'failed'>('copy-status', () => 'idle')
+const { copyLink } = useEventActions()
 const dialog = useTemplateRef<HTMLDialogElement>('copy-dialog')
 const copyInput = useTemplateRef<HTMLInputElement>('copy-input')
 useHead({ link: [{ rel: 'icon', type: 'image/svg+xml', href: asset('favicon.svg') }, { rel: 'alternate', type: 'application/rss+xml', title: 'COSCUP Events', href: asset('feed.xml') }] })
@@ -9,6 +11,12 @@ watch(copyURL, async (value) => {
   if (value) { await nextTick(); dialog.value?.showModal(); copyInput.value?.select() }
   else dialog.value?.close()
 })
+async function copyAgain() {
+  if (!await copyLink(copyURL.value)) {
+    copyInput.value?.focus({ preventScroll: true })
+    copyInput.value?.select()
+  }
+}
 onMounted(() => {
   const refresh = () => { now.value = Date.now() }
   refresh()
@@ -24,9 +32,15 @@ onMounted(() => {
   <NuxtPage :page-key="route => route.path" />
   <SiteFooter />
   <div class="toast" :class="{ visible: message }" role="status" aria-live="polite">{{ message }}</div>
-  <dialog ref="copy-dialog" class="copy-dialog" aria-labelledby="copy-title" @close="copyURL = ''">
-    <h2 id="copy-title">{{ t('copyHelp') }}</h2>
-    <input ref="copy-input" :value="copyURL" readonly :aria-label="t('copyHelp')" @focus="($event.target as HTMLInputElement).select()">
+  <dialog ref="copy-dialog" class="copy-dialog" aria-labelledby="copy-title" @close="copyURL = ''; copyStatus = 'idle'">
+    <h2 id="copy-title">{{ t('shareTitle') }}</h2>
+    <div class="copy-url-field">
+      <input ref="copy-input" :value="copyURL" readonly :aria-label="t('eventURL')" @focus="($event.target as HTMLInputElement).select()">
+      <button type="button" class="button secondary-button copy-button" :aria-label="t('copyLink')" :title="t('copyLink')" @click="copyAgain">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+      </button>
+    </div>
+    <p class="copy-status secondary" role="status">{{ copyStatus === 'copied' ? t('copied') : copyStatus === 'failed' ? t('copyHelp') : '' }}</p>
     <button class="button primary" @click="copyURL = ''">{{ t('close') }}</button>
   </dialog>
 </template>

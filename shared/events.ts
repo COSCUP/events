@@ -124,15 +124,6 @@ export function primaryAction(event: Event, now: number): EventAction | undefine
   }
   return event.registration.url ? { kind: status === 'info' ? 'official' : 'register', url: event.registration.url } : undefined
 }
-export function platform(event: Event): string {
-  if (event.registration.platform) return event.registration.platform
-  const value = event.registration.url || event.registration.joinUrl
-  if (!value) return ''
-  const hostname = new URL(value).hostname
-  if (/(^|\.)(kktix\.(cc|com))$/.test(hostname)) return 'KKTIX'
-  if (hostname === 'meet.jit.si') return 'Jitsi Meet'
-  return hostname.replace(/^www\./, '')
-}
 export function taipeiDate(value: string): string {
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(value))
   const part = (type: string) => parts.find(part => part.type === type)!.value

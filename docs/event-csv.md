@@ -155,7 +155,7 @@ Venue map | See directions
 
 | 欄位 | 用途與預設 |
 | --- | --- |
-| `registration_platform` | 報名平台名稱；未填時網站從網址辨識平台。 |
+| `registration_platform` | 選填的平台名稱，僅作補充資訊；不從網址自動辨識。報名按鈕一律顯示「前往報名」。 |
 | `registration_opens_at` | 報名開放時間；可產生報名提醒，時間到不會自行改為已開放。 |
 | `registration_closes_at` | 報名截止時間。 |
 | `registration_note_zh`, `registration_note_en` | 報名補充說明。 |

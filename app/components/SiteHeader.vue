@@ -1,9 +1,7 @@
 <script setup lang="ts">
-const { locale, t, path, asset, demo, conductLink } = useSite()
-const route = useRoute()
+const { locale, t, path, asset, conductLink } = useSite()
 </script>
 <template>
-  <div v-if="demo" class="example-notice"><div class="container">{{ route.path.includes('about') || route.path.includes('code-of-conduct') ? t('policyDemo') : t('demo') }}</div></div>
   <header class="site-header">
     <div class="container header-inner">
       <NuxtLink :to="path()" class="brand" :aria-label="`COSCUP ${t('upcoming')}`">

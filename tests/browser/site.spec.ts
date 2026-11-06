@@ -96,29 +96,52 @@ test('calendar download contains real timezone data and share has clipboard feed
   expect(content).toContain('DTSTART:20261114T050000Z')
   expect(content).toContain('DTEND:20261114T093000Z')
   await page.evaluate(() => {
-    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined })
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (value: string) => { (window as any).copiedURL = value } } })
+    history.replaceState(null, '', `${location.pathname}?source=preview#agenda`)
+    Object.defineProperty(navigator, 'share', { configurable: true, value: async () => { (window as any).nativeShareCalled = true } })
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (value: string) => {
+      (window as any).copiedURL = value
+      ;(window as any).copyCount = ((window as any).copyCount || 0) + 1
+    } } })
   })
   await page.getByRole('button', { name: '分享', exact: true }).click()
-  await expect(page.getByRole('status')).toHaveText('已複製連結')
+  const dialog = page.getByRole('dialog', { name: '分享活動' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('status')).toHaveText('已複製連結')
   expect(await page.evaluate(() => (window as any).copiedURL)).toMatch(/\/events\/events\/community-meetup-taipei\/$/)
+  expect(await page.evaluate(() => (window as any).nativeShareCalled)).toBeUndefined()
+  await dialog.getByRole('button', { name: '複製連結', exact: true }).click()
+  expect(await page.evaluate(() => (window as any).copyCount)).toBe(2)
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button', { name: '分享', exact: true })).toBeFocused()
 })
 
-test('share cancellation is silent and denied clipboard offers a selectable URL', async ({ page }) => {
+test('share offers a selectable URL and a copy icon when clipboard access fails', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 })
   await page.goto('en/events/simple-meetup/')
-  await page.evaluate(() => Object.defineProperty(navigator, 'share', { configurable: true, value: async () => { throw new DOMException('Cancelled', 'AbortError') } }))
-  await page.getByRole('button', { name: 'Share', exact: true }).click()
-  await expect(page.getByRole('status')).toHaveText('')
-  await expect(page.getByRole('dialog')).not.toBeVisible()
   await page.evaluate(() => {
-    Object.defineProperty(navigator, 'share', { configurable: true, value: undefined })
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Denied') } } })
+    Object.defineProperty(document, 'execCommand', { configurable: true, value: () => false })
   })
   await page.getByRole('button', { name: 'Share', exact: true }).click()
-  await expect(page.getByRole('dialog')).toBeVisible()
-  await expect(page.getByRole('textbox')).toBeFocused()
+  const dialog = page.getByRole('dialog', { name: 'Share event' })
+  const input = dialog.getByRole('textbox', { name: 'Event URL' })
+  const copy = dialog.getByRole('button', { name: 'Copy link', exact: true })
+  await expect(dialog).toBeVisible()
+  await expect(input).toBeFocused()
+  await expect(dialog.getByRole('status')).toContainText('Could not copy')
+  await copy.click()
+  await expect(input).toBeFocused()
+  expect(await input.evaluate((element: HTMLInputElement) => element.selectionEnd! - element.selectionStart!)).toBe((await input.inputValue()).length)
+  await page.evaluate(() => Object.defineProperty(document, 'execCommand', { configurable: true, value: (command: string) => {
+    (window as any).copiedURL = (document.activeElement as HTMLTextAreaElement)?.value
+    return command === 'copy'
+  } }))
+  await copy.click()
+  await expect(dialog.getByRole('status')).toHaveText('Link copied')
+  expect(await page.evaluate(() => (window as any).copiedURL)).toMatch(/\/events\/en\/events\/simple-meetup\/$/)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog')).not.toBeVisible()
+  await expect(dialog).not.toBeVisible()
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeFocused()
 })
 
@@ -146,7 +169,7 @@ test('empty, single, minimal and untranslated data render without invented detai
   await page.goto('events/no-intro/')
   await expect(page.locator('#intro')).toHaveCount(0)
   await expect(page.locator('.short-intro')).toHaveCount(0)
-  await expect(page.getByRole('link', { name: /前往官方報名/ }).first()).toBeVisible()
+  await expect(page.getByRole('link', { name: /前往報名/ }).first()).toBeVisible()
   await page.goto('en/events/translation-example/')
   await expect(page.locator('.translation-notice')).toHaveCount(1)
   await expect(page.locator('.short-intro')).toHaveAttribute('lang', 'zh-TW')

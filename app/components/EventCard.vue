@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { monthDayLabel, timeRange, timeLabel, plainIntro, taipeiDate, platform, registrationStatus, type Event } from '#shared/events'
+import { monthDayLabel, timeRange, timeLabel, plainIntro, taipeiDate, registrationStatus, type Event } from '#shared/events'
 const props = defineProps<{ event: Event }>()
 const { locale, local, lang, t, path, now } = useSite()
 const parts = computed(() => taipeiDate(props.event.startsAt).split('-'))
@@ -33,7 +33,7 @@ const format = computed(() => locale.value === 'en' ? { 'in-person': 'In person'
     <div class="card-actions">
       <div class="status-line"><StatusBadge :status="registrationStatus(event, now)" /></div>
       <EventPrimaryAction :event="event" />
-      <p v-if="event.registration.mode === 'external' && event.registration.status === 'info' && platform(event)" class="tertiary">{{ platform(event) }} · {{ t('officialNote') }}</p>
+      <p v-if="event.registration.mode === 'external' && event.registration.status === 'info'" class="tertiary">{{ t('officialNote') }}</p>
       <NuxtLink :id="`detail-${event.slug}`" class="detail-link" :to="path(`/events/${event.slug}/`)" data-remember-focus>{{ t('details') }} <span aria-hidden="true">→</span><span class="sr-only"> — {{ local(event.title) }}</span></NuxtLink>
     </div>
   </article>
