@@ -10,6 +10,18 @@ const previousDate = computed(() => {
 })
 const subscribeURL = `${siteRoot.replace(/^https?:/, 'webcal:')}/calendar.ics`
 usePageMeta(() => t('upcoming'), () => locale.value === 'en' ? 'Find COSCUP meetups, workshops, and open-source community events.' : '探索 COSCUP 社群聚會、工作坊與開源活動，查看活動資訊及參加方式。')
+const shareImage = computed(() => `${siteRoot}/og/home-${locale.value}.png`)
+const shareImageAlt = computed(() => locale.value === 'en' ? 'COSCUP Events — Meetups, workshops, and open-source events' : 'COSCUP 活動 — 社群聚會、工作坊與開源活動')
+useSeoMeta({
+  ogImage: () => shareImage.value,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageType: 'image/png',
+  ogImageAlt: () => shareImageAlt.value,
+  twitterCard: 'summary_large_image',
+  twitterImage: () => shareImage.value,
+  twitterImageAlt: () => shareImageAlt.value,
+})
 </script>
 <template>
   <main id="main" tabindex="-1">

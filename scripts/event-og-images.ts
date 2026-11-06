@@ -38,6 +38,7 @@ function wrapText(context: SKRSContext2D, value: string, width: number, locale: 
 }
 
 type TextBox = { x: number; y: number; width: number; height: number; size: number; minSize: number; maxLines: number; centered?: boolean }
+const titleBox: TextBox = { x: 64, y: 164, width: 1072, height: 220, size: 76, minSize: 40, maxLines: 3, centered: true }
 
 function drawText(context: SKRSContext2D, value: string, locale: Locale, box: TextBox) {
   let size = box.size
@@ -61,28 +62,37 @@ function drawText(context: SKRSContext2D, value: string, locale: Locale, box: Te
 export async function generateEventOgImages(events: Event[], directory: string, logoPath: string) {
   loadFonts()
   const logo = await loadImage(logoPath)
+  const createImage = () => {
+    const canvas = createCanvas(1200, 630)
+    const context = canvas.getContext('2d')
+    context.textBaseline = 'top'
+    context.fillStyle = '#f4f7f1'
+    context.fillRect(0, 0, 1200, 630)
+    context.fillStyle = '#3b9838'
+    context.fillRect(0, 0, 1200, 8)
+    context.drawImage(logo, 64, 56, 168, 168 * logo.height / logo.width)
+    context.fillStyle = '#2c762a'
+    context.font = `500 24px ${fontFamily}`
+    context.textAlign = 'right'
+    context.fillText('coscup.org/events', 1136, 74)
+    context.textAlign = 'left'
+    context.fillStyle = '#0c3c23'
+    context.fillRect(0, 430, 1200, 200)
+    return { canvas, context }
+  }
   // This directory contains generated images only; removed CSV rows leave no stale images.
   rmSync(directory, { recursive: true, force: true })
   for (const locale of ['zh-TW', 'en'] as const) {
     const output = join(directory, locale)
     mkdirSync(output, { recursive: true })
+    const home = createImage()
+    drawText(home.context, locale === 'en' ? 'COSCUP Events' : 'COSCUP 活動', locale, titleBox)
+    home.context.fillStyle = '#ffffff'
+    drawText(home.context, locale === 'en' ? 'Meetups · Workshops · Open-source events' : '社群聚會・工作坊・開源活動', locale, { x: 64, y: 464, width: 1072, height: 132, size: 40, minSize: 28, maxLines: 2, centered: true })
+    writeFileSync(join(directory, `home-${locale}.png`), await home.canvas.encode('png'))
     for (const event of events) {
-      const canvas = createCanvas(1200, 630)
-      const context = canvas.getContext('2d')
-      context.textBaseline = 'top'
-      context.fillStyle = '#f4f7f1'
-      context.fillRect(0, 0, 1200, 630)
-      context.fillStyle = '#3b9838'
-      context.fillRect(0, 0, 1200, 8)
-      context.drawImage(logo, 64, 56, 168, 168 * logo.height / logo.width)
-      context.fillStyle = '#2c762a'
-      context.font = `500 24px ${fontFamily}`
-      context.textAlign = 'right'
-      context.fillText('coscup.org/events', 1136, 74)
-      context.textAlign = 'left'
-      context.fillStyle = '#0c3c23'
-      drawText(context, text(event.title, locale), locale, { x: 64, y: 164, width: 1072, height: 220, size: 76, minSize: 40, maxLines: 3, centered: true })
-      context.fillRect(0, 430, 1200, 200)
+      const { canvas, context } = createImage()
+      drawText(context, text(event.title, locale), locale, titleBox)
       context.fillStyle = '#5e8069'
       context.fillRect(520, 468, 1, 114)
       context.fillStyle = '#c3cfbd'

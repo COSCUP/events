@@ -160,6 +160,25 @@ test('static feeds, Agent content, share images and missing-page handling are co
     expect(content).toContain(expected!)
     expect(content).not.toMatch(/\/events\/(?:en\/)?events\//)
   }
+  for (const [route, locale] of [['./', 'zh-TW'], ['en/', 'en']]) {
+    const response = await request.get(route!)
+    expect(response.status()).toBe(200)
+    const html = await response.text()
+    const imageURL = `https://coscup.org/events/og/home-${locale}.png`
+    expect(html).toContain(`<meta property="og:image" content="${imageURL}">`)
+    expect(html).toContain('<meta property="og:image:width" content="1200">')
+    expect(html).toContain('<meta property="og:image:height" content="630">')
+    expect(html).toContain('<meta property="og:image:type" content="image/png">')
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image">')
+    expect(html).toContain(`<meta name="twitter:image" content="${imageURL}">`)
+    const image = await request.get(`og/home-${locale}.png`)
+    expect(image.status()).toBe(200)
+    expect(image.headers()['content-type']).toContain('image/png')
+    const png = await image.body()
+    expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a')
+    expect(png.readUInt32BE(16)).toBe(1200)
+    expect(png.readUInt32BE(20)).toBe(630)
+  }
   for (const item of events) {
     for (const [prefix, locale] of [['', 'zh-TW'], ['en/', 'en']] as const) {
       const response = await request.get(`${prefix}${item.slug}/index.md`)

@@ -6,7 +6,7 @@ import { createCanvas, type SKRSContext2D } from '@napi-rs/canvas'
 import { parseEventCsv } from '../scripts/events-csv.ts'
 import { generateEventOgImages } from '../scripts/event-og-images.ts'
 
-test('bilingual OG images fit long titles, addresses and unbroken text', async () => {
+test('bilingual homepage and event OG images fit their content', async () => {
   const required = {
     publish: 'true', slug: 'required-only', title_zh: 'COSCUP 小聚', title_en: 'COSCUP Meetup',
     intro_zh: '交流開源專案。', intro_en: 'Discuss open-source projects.',
@@ -57,7 +57,7 @@ test('bilingual OG images fit long titles, addresses and unbroken text', async (
   } finally {
     prototype.fillText = original
   }
-  assert.equal(frames.size, events.length * 2)
+  assert.equal(frames.size, (events.length + 1) * 2)
   for (const draws of frames.values()) {
     for (const draw of draws) {
       assert.ok(draw.left >= 48 && draw.right <= 1152, `Horizontal overflow: ${draw.text}`)
@@ -67,13 +67,17 @@ test('bilingual OG images fit long titles, addresses and unbroken text', async (
     const location = draws.filter(draw => draw.x === 576 && draw.y >= 504)
     assert.ok(title.length >= 1 && title.length <= 3)
     assert.ok(title.every(draw => draw.bottom < 406), 'Title overlaps the information band')
-    assert.ok(location.length >= 1 && location.length <= 3)
-    assert.ok(location.every(draw => draw.left > 544), 'Location overlaps the date')
+    if (draws.some(draw => draw.text === 'DATE' || draw.text === '日期')) {
+      assert.ok(location.length >= 1 && location.length <= 3)
+      assert.ok(location.every(draw => draw.left > 544), 'Location overlaps the date')
+    }
   }
   const drawnText = [...frames.values()].flat().map(draw => draw.text)
   assert.equal(drawnText.filter(value => value === '2026.11.15').length, 2, 'Dates use Taiwan time')
   assert.ok(drawnText.some(value => value.endsWith('…')), 'Extreme text is visibly truncated')
   assert.ok(drawnText.some(value => value.includes('臺北市中正區')), 'Optional addresses appear')
+  assert.ok(drawnText.includes('COSCUP 活動'))
+  assert.ok(drawnText.includes('COSCUP Events'))
   for (const event of events) {
     for (const locale of ['zh-TW', 'en']) {
       const image = readFileSync(join(directory, locale, `${event.slug}.png`))
@@ -81,6 +85,15 @@ test('bilingual OG images fit long titles, addresses and unbroken text', async (
       assert.equal(image.readUInt32BE(16), 1200)
       assert.equal(image.readUInt32BE(20), 630)
     }
+  }
+  const emptyDirectory = join(directory, 'empty')
+  await generateEventOgImages([], emptyDirectory, resolve('public/images/coscup-green.svg'))
+  for (const locale of ['zh-TW', 'en']) {
+    const image = readFileSync(join(emptyDirectory, `home-${locale}.png`))
+    assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a')
+    assert.equal(image.readUInt32BE(16), 1200)
+    assert.equal(image.readUInt32BE(20), 630)
+    assert.deepEqual(image, readFileSync(join(directory, `home-${locale}.png`)), 'Homepage images do not depend on event rows')
   }
   writeFileSync(join(directory, 'layout.json'), JSON.stringify([...frames.values()], null, 2))
 })

@@ -2,6 +2,8 @@
 
 The bilingual [COSCUP event website](https://coscup.org/events/), built with Nuxt 4, Vue 3 and TypeScript for GitHub Pages. Pages, share images, calendar/RSS feeds and `llms.txt` with event Markdown are generated from one CSV.
 
+Both language homepages also include automatically generated 1200×630 share images.
+
 ## Publish an event
 
 1. Edit [`event.csv`](event.csv), one event per row. See the [CSV guide](docs/event-csv.md) for fields and formatting.
