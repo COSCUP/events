@@ -16,7 +16,6 @@ usePageMeta(() => t('upcoming'), () => locale.value === 'en' ? 'Find COSCUP meet
     <section class="container events-section" :class="{ 'empty-list': !upcoming.length }" aria-labelledby="page-title">
       <div class="list-heading">
         <div><h1 id="page-title" tabindex="-1">{{ t('upcoming') }}</h1><p v-if="upcoming.length" class="secondary">{{ upcoming.length }} {{ locale === 'en' ? (upcoming.length === 1 ? 'event' : 'events') : '場' }} · {{ t('timezone') }}</p></div>
-        <a v-if="upcoming.length" class="text-link calendar-feed" :href="subscribeURL">{{ t('calendarFeed') }} <span aria-hidden="true">↗</span></a>
       </div>
       <div v-if="upcoming.length" class="event-list"><EventCard v-for="event in upcoming" :key="event.slug" :event="event" /></div>
       <template v-else>

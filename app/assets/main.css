@@ -77,7 +77,6 @@ li::marker { color: var(--brand); }
 .list-heading h1 { margin-bottom: 6px; }
 .list-heading p { font-size: 15px; line-height: 24px; }
 .empty-list .list-heading h1 { margin-bottom: 0; }
-.calendar-feed { margin-bottom: -11px; }
 .event-list { display: grid; gap: 16px; }
 .event-card { display: grid; grid-template-columns: 185px minmax(0, 1fr) 256px; gap: 32px; border: 1px solid var(--border); border-radius: 10px; padding: 31px; }
 .card-date { display: flex; flex-direction: column; gap: 4px; border-right: 1px solid var(--border); padding-right: 32px; }
@@ -320,7 +319,6 @@ li::marker { color: var(--brand); }
   .events-section { padding-block: 28px 56px; }
   .events-section:not(.empty-list) { padding-bottom: 48px; }
   .list-heading { display: block; margin-bottom: 24px; }
-  .calendar-feed { margin-top: -3px; margin-bottom: -11px; }
   .event-card { grid-template-columns: 64px minmax(0, 1fr); padding: 19px; column-gap: 16px; row-gap: 16px; }
   .card-date { border: 0; padding: 0; grid-row: 1; gap: 2px; }
   .date-year { font-size: 13px; }
