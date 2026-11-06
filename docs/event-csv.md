@@ -6,6 +6,7 @@ Edit [`event.csv`](../event.csv) as UTF-8 CSV, one event per row. Preserve the h
 - Dates accept `YYYY-MM-DD HH:mm` (Taiwan, UTC+8) or ISO 8601 with an offset. Keep spreadsheet date cells as text. URLs must use HTTP(S).
 - Blank optional fields are omitted. Draft rows may be incomplete, but the repository and CSV are public.
 - Run `npm run check:events` before publishing; errors identify the row and field.
+- Each published event gets Chinese and English 1200×630 PNG share images using its title, venue, optional address and start date (Taiwan time). Long text wraps and shrinks, then uses an ellipsis if needed. Images regenerate from the CSV in development and on deployment; no image field is needed.
 
 ## Required fields
 

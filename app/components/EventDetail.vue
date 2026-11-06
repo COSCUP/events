@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { introMode, hasFallback, dateLabel, monthDayLabel, taipeiDate, timeRange, timeLabel, primaryAction, registrationStatus, upcomingEvents, type Fact } from '#shared/events'
-const { locale, local, lang, t, path, events, now, conductLink } = useSite()
+const { locale, local, lang, t, path, events, now, conductLink, siteRoot } = useSite()
 const route = useRoute()
 const event = events.find(event => event.slug === route.params.slug)
 if (!event) throw createError({ statusCode: 404, statusMessage: 'Event not found' })
@@ -34,6 +34,18 @@ const basicFacts = computed<Fact[]>(() => {
   ]
 })
 usePageMeta(() => local(event.title), () => local(event.intro) || `${local(event.title)} · ${dateLabel(event.startsAt, locale.value)} · ${local(event.venue)}`)
+const shareImage = computed(() => `${siteRoot}/og/${locale.value}/${event.slug}.png`)
+const shareImageAlt = computed(() => [local(event.title), local(event.venue), local(event.address), dateLabel(event.startsAt, locale.value)].filter(Boolean).join(' · '))
+useSeoMeta({
+  ogImage: () => shareImage.value,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageType: 'image/png',
+  ogImageAlt: () => shareImageAlt.value,
+  twitterCard: 'summary_large_image',
+  twitterImage: () => shareImage.value,
+  twitterImageAlt: () => shareImageAlt.value,
+})
 
 onMounted(() => {
   const action = registration.value?.querySelector('[data-primary-action]')

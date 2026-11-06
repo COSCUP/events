@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { parseEventCsv } from './scripts/events-csv'
+import { generateEventOgImages } from './scripts/event-og-images'
 
 const development = process.env.NODE_ENV === 'development'
 const csvSource = fileURLToPath(new URL('./event.csv', import.meta.url))
@@ -12,11 +13,17 @@ const compiled = JSON.stringify(events)
 if (!existsSync(source) || readFileSync(source, 'utf8') !== compiled) writeFileSync(source, compiled)
 const baseURL = `/${(process.env.NUXT_APP_BASE_URL || '/events/').replace(/^\/+|\/+$/g, '')}/`.replace('//', '/')
 const siteURL = process.env.NUXT_PUBLIC_SITE_URL || 'https://coscup.org'
+const ogDirectory = fileURLToPath(new URL('./.data/og', import.meta.url))
+mkdirSync(ogDirectory, { recursive: true })
+const logo = fileURLToPath(new URL('./public/images/coscup-green.svg', import.meta.url))
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-11-05',
   devtools: { enabled: false },
-  watch: [csvSource, fileURLToPath(new URL('./scripts/events-csv.ts', import.meta.url))],
+  watch: [csvSource, fileURLToPath(new URL('./scripts/events-csv.ts', import.meta.url)), fileURLToPath(new URL('./scripts/event-og-images.ts', import.meta.url)), logo],
+  hooks: {
+    'nitro:config': async () => { await generateEventOgImages(events, ogDirectory, logo) },
+  },
   app: {
     baseURL,
     pageTransition: { name: 'page', mode: 'out-in' },
@@ -34,6 +41,7 @@ export default defineNuxtConfig({
   typescript: { strict: true },
   nitro: {
     preset: 'static',
+    publicAssets: [{ dir: ogDirectory, baseURL: '/og/' }],
     // Nitro clears its output on startup; keep dev away from the static build.
     output: development
       ? { dir: '.nuxt/dev-output', publicDir: '.nuxt/dev-output/public' }

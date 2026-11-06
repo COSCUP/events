@@ -152,7 +152,7 @@ test('official documents retain their text and safe return links', async ({ page
   }
 })
 
-test('static feeds, Agent content and missing-page handling are complete', async ({ page, request }) => {
+test('static feeds, Agent content, share images and missing-page handling are complete', async ({ page, request }) => {
   for (const [route, expected] of [['calendar.ics', 'BEGIN:VCALENDAR'], ['feed.xml', '<rss'], ['sitemap.xml', '<urlset'], ['llms.txt', '# COSCUP Events']]) {
     const response = await request.get(route!)
     expect(response.status()).toBe(200)
@@ -167,6 +167,17 @@ test('static feeds, Agent content and missing-page handling are complete', async
       const markdown = await response.text()
       if (item.description?.[locale]) expect(markdown).toContain(item.description[locale])
       if (!item.fee) expect(markdown).not.toContain('- Fee / 費用:')
+      const imageURL = `https://coscup.org/events/og/${locale}/${item.slug}.png`
+      const html = await (await request.get(`${prefix}${item.slug}/`)).text()
+      expect(html).toContain(`<meta property="og:image" content="${imageURL}">`)
+      expect(html).toContain('<meta name="twitter:card" content="summary_large_image">')
+      const image = await request.get(`og/${locale}/${item.slug}.png`)
+      expect(image.status()).toBe(200)
+      expect(image.headers()['content-type']).toContain('image/png')
+      const png = await image.body()
+      expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a')
+      expect(png.readUInt32BE(16)).toBe(1200)
+      expect(png.readUInt32BE(20)).toBe(630)
     }
   }
   const rootHTML = await (await request.get('./')).text()
