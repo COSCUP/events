@@ -1,0 +1,66 @@
+﻿publish,slug*,title_zh*,title_en*,starts_at*,ends_at,format*,venue_zh*,venue_en*,registration_mode*,registration_url,registration_status,intro_zh*,intro_en*,category_zh,category_en,address_zh,address_en,map_url,language_zh,language_en,language_note_zh,language_note_en,fee_zh,fee_en,capacity,check_in,registration_platform,registration_opens_at,registration_closes_at,registration_note_zh,registration_note_en,waitlist_url,join_url,join_ready,audience_zh,audience_en,preparation_zh,preparation_en,agenda_zh,agenda_en,travel_zh,travel_en,participation_zh,participation_en,notices_zh,notices_en,availability_remaining,availability_source,availability_updated_at,availability_valid,state,listed,record_url,announcement_url
+true,community-meetup-taipei,COSCUP 社群聚會・台北,COSCUP Community Meetup · Taipei,2026-11-14T13:00:00+08:00,2026-11-14T17:30:00+08:00,in-person,國立臺灣科技大學 國際大樓 IB-101,NTUST · International Building IB-101,external,https://coscup-tw.kktix.cc/,open,"Lightning Talk 與 BoF 分組交流，邀請對開源有興趣的朋友分享經驗、認識彼此。
+
+活動包含 8 場每場 5 分鐘的 Lightning Talk，以及文件翻譯、新手貢獻、社群經營與開源授權等主題交流。最後安排自由交流與合照。","Lightning Talks and Birds of a Feather sessions for sharing ideas and meeting fellow open-source enthusiasts.
+
+Join eight five-minute Lightning Talks and discussions on documentation translation, first contributions, community building, and open-source licensing. The event ends with networking and a group photo.",社群聚會,Meetup,台北市大安區基隆路四段 43 號,"43, Sec. 4, Keelung Rd., Da’an Dist., Taipei",https://www.google.com/maps/search/?api=1&query=NTUST+International+Building,實體・華語,In person · Mandarin,部分講題英語,Some talks in English,免費,Free,80,12:30,KKTIX,,2026-11-12T23:59:00+08:00,,,,,,"COSCUP 參加者，或第一次參加開源活動的人
+開源專案維護者與貢獻者
+尋找夥伴、講者、志工的社群組織者","COSCUP attendees and newcomers to open source
+Open-source project maintainers and contributors
+Community organizers looking for collaborators, speakers, or volunteers","報到 QR Code（見報名完成信）
+Lightning Talk 分享：報名表勾選・5 分鐘・投影片可省略
+筆電（非必要）・現場有 Wi-Fi 與插座","Your check-in QR code from the confirmation email
+Lightning Talk: sign up on the form · 5 minutes · Slides optional
+Laptop optional · Wi-Fi and power outlets available","12:30 | 報到 | 領名牌・不想入鏡可改領黃色掛繩
+13:00 | 開場 | COSCUP 2026 回顧・2027 籌備近況
+13:20 | Lightning Talks | 8 場 × 5 分鐘・講者名單 11/7 公布
+14:20 | 休息 |
+14:40 | BoF 分組交流 | 文件翻譯、新手貢獻、社群經營、開源授權
+16:30 | 自由交流・合照 |
+17:30 | 結束 | ","12:30 | Check-in | Pick up your badge · Choose a yellow lanyard if you prefer no photos
+13:00 | Welcome | COSCUP 2026 recap and 2027 planning update
+13:20 | Lightning Talks | 8 talks × 5 minutes · Speakers announced 7 Nov
+14:20 | Break |
+14:40 | Birds of a Feather | Documentation, first contributions, community building, and open-source licensing
+16:30 | Networking and group photo |
+17:30 | Close | ","捷運 | 綠線 公館站 1 號出口・步行約 10 分鐘 |  |
+公車 | 「臺灣科技大學」站 |  |
+無障礙 | 國際大樓 1F 坡道與電梯・B1 無障礙廁所 | 需協助：報名時備註 |
+停車 | 校內不開放停車 |  | ","Metro | Gongguan Station, Green Line, Exit 1 · About a 10-minute walk |
+Bus | National Taiwan University of Science and Technology stop |
+Access | International Building: ramp and lift on 1F; accessible restroom on B1 | Request assistance on the registration form
+Parking | No on-campus parking | ",,,"求助 | 綠色背心工作人員・events@coscup.org（示意） |  |
+攝影 | 全程拍照錄影 | 不想入鏡：報到時領黃色掛繩 | ","Help | Ask staff in green vests · events@coscup.org (example) |
+Photos | Photos and video will be taken | Prefer no photos? Pick up a yellow lanyard at check-in",28,KKTIX,2026-11-12T18:00:00+08:00,,,,,
+true,first-pull-request,開源貢獻工作坊：從第一個 PR 開始,Open-source Workshop: Your First Pull Request,2026-11-21T14:00:00+08:00,2026-11-21T17:00:00+08:00,online,線上・Jitsi Meet,Online · Jitsi Meet,external,https://coscup-tw.kktix.cc/,open,"透過 Git 與 GitHub 實作，完成你的第一個開源貢獻。
+
+工作坊由助教陪同，從尋找適合的 issue、修改內容到送出 Pull Request，逐步練習開源協作。歡迎已有基本 Git 經驗、想開始參與開源專案的朋友。","Make your first open-source contribution with Git and GitHub.
+
+Teaching assistants will guide you through finding an issue, making changes, and opening a pull request. Join us if you know the basics of Git and want to start contributing to open source.",工作坊,Workshop,連結 11/20（五）寄至報名信箱,"Link emailed to registrants on Fri, 20 Nov",,線上・華語,Online · Mandarin,提供逐字稿,Transcript available,免費,Free,40,,KKTIX,,2026-11-19T23:59:00+08:00,,,,,,"還沒送過 PR 的開發者與學生
+想讓專案更容易上手的維護者","Developers and students making their first pull request
+Maintainers who want to make their projects more welcoming","GitHub 帳號
+已安裝 Git 的電腦
+穩定網路・建議使用耳機","A GitHub account
+A computer with Git installed
+A stable connection · Headphones recommended","14:00 | 開場・分組 |
+14:20 | 找 issue・fork |
+15:00 | commit・開 PR |
+16:00 | 回應 review |
+17:00 | 結束 | ","14:00 | Welcome and groups |
+14:20 | Find an issue and fork |
+15:00 | Commit and open a pull request |
+16:00 | Respond to reviews |
+17:00 | Close | ",,,"平台 | Jitsi Meet・瀏覽器即可，免安裝 |  |
+連結 | 11/20（五）寄至報名信箱 | 未收到：events@coscup.org（示意） |
+紀錄 | 逐字稿與錄影於活動後 7 天內公開 |  | ","Platform | Jitsi Meet · Join in your browser, no install needed |
+Link | Emailed to registrants on Fri, 20 Nov | Missing the email? events@coscup.org (example)
+Recap | Transcript and recording published within 7 days | ","求助 | 會議聊天室私訊主持人・events@coscup.org（示意） |  |
+錄影 | 全程錄影 | 不想入鏡：關閉鏡頭即可 | ","Help | Message the host in the meeting chat · events@coscup.org (example) |
+Recording | The event will be recorded | Keep your camera off if you prefer not to appear",6,KKTIX,2026-11-12T18:00:00+08:00,,,,,
+true,simple-meetup,COSCUP 社群聚會・台北,COSCUP Community Meetup · Taipei,2026-11-14T13:00:00+08:00,2026-11-14T17:30:00+08:00,in-person,國立臺灣科技大學 國際大樓 IB-101,NTUST · International Building IB-101,external,https://coscup-tw.kktix.cc/,info,Lightning Talk ＋ BoF 分組交流,Lightning Talks and Birds of a Feather,,,,,,,,,,,,,,KKTIX,,,,,,,,,,,,,,,,,,,,,,,,,false,,
+true,no-intro,COSCUP 社群聚會・台北,COSCUP Community Meetup · Taipei,2026-11-14T13:00:00+08:00,2026-11-14T17:30:00+08:00,in-person,國立臺灣科技大學 國際大樓 IB-101,NTUST · International Building IB-101,external,https://coscup-tw.kktix.cc/,info,,,,,,,,,,,,,,,,KKTIX,,,,,,,,,,,,,,,,,,,,,,,,,false,,
+true,translation-example,COSCUP 社群聚會・台北,COSCUP Community Meetup · Taipei,2026-11-14T13:00:00+08:00,2026-11-14T17:30:00+08:00,in-person,國立臺灣科技大學 國際大樓 IB-101,NTUST · International Building IB-101,external,https://coscup-tw.kktix.cc/,info,一起交流開源經驗，認識社群夥伴。,,,,,,,,,,,,,,,KKTIX,,,,,,,,,,,,,,,,,,,,,,,,,false,,
+true,online-gathering,開源線上交流,Open-source online gathering,2026-11-14T13:00:00+08:00,2026-11-14T17:30:00+08:00,online,線上・Jitsi Meet,Online · Jitsi Meet,free,,,歡迎一起聊聊最近參與的開源專案。,Come share the open-source projects you have been working on.,,,,,,,,,,,,,,,,,,,,,false,,,,,,,,,,,,,,,,,,false,,
+true,long-translation-example,COSCUP 社群聚會・台北,COSCUP Community Meetup · Taipei,2026-11-14T13:00:00+08:00,2026-11-14T17:30:00+08:00,in-person,國立臺灣科技大學 國際大樓 IB-101,NTUST · International Building IB-101,external,https://coscup-tw.kktix.cc/,info,"Lightning Talk 與 BoF 分組交流，邀請對開源有興趣的朋友分享經驗、認識彼此。
+
+活動包含 8 場每場 5 分鐘的 Lightning Talk，以及文件翻譯、新手貢獻、社群經營與開源授權等主題交流。最後安排自由交流與合照。",,,,,,,,,,,,,,,KKTIX,,,,,,,,,,,,,,,,,,,,,,,,,false,,

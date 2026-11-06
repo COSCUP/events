@@ -1,0 +1,21 @@
+<script setup lang="ts">
+const { locale, t, path, asset, demo, conductLink } = useSite()
+const route = useRoute()
+</script>
+<template>
+  <div v-if="demo" class="example-notice"><div class="container">{{ route.path.includes('about') || route.path.includes('code-of-conduct') ? t('policyDemo') : t('demo') }}</div></div>
+  <header class="site-header">
+    <div class="container header-inner">
+      <NuxtLink :to="path()" class="brand" :aria-label="`COSCUP ${t('upcoming')}`">
+        <img :src="asset('images/coscup-green.svg')" width="90" height="34" alt="COSCUP">
+        <span>{{ t('events') }}</span>
+      </NuxtLink>
+      <nav :aria-label="locale === 'en' ? 'Main navigation' : '主要導覽'">
+        <ExternalLink class="desktop-nav" href="https://coscup.org/2026/">{{ t('conference') }}</ExternalLink>
+        <NuxtLink id="header-conduct" class="desktop-nav" :to="conductLink('header')" data-remember-focus>{{ t('conduct') }}</NuxtLink>
+        <NuxtLink class="desktop-nav" :to="path('/about/')">{{ t('about') }}</NuxtLink>
+        <LanguageSwitch />
+      </nav>
+    </div>
+  </header>
+</template>

@@ -1,57 +1,110 @@
 # COSCUP Events
 
-COSCUP Events is a planned hub for upcoming COSCUP activities. It will bring together event descriptions, dates, locations, related information, and registration links so participants can quickly find events to join.
+A bilingual hub for COSCUP activities, built with **Nuxt 4, Vue 3 and TypeScript**, and generated as static HTML for GitHub Pages. Registration takes place on each organizer's external website.
 
-The project is planned as a static website deployed with GitHub Pages. Registration will take place on each event's external registration page.
+The site includes responsive event listings and details, About COSCUP, the official Code of Conduct, calendar downloads and subscriptions, an RSS feed, and Chinese/English navigation. Events are published from [`event.csv`](event.csv), with `llms.txt` and bilingual Markdown generated alongside the pages. Fonts and icons are served locally; no third-party scripts or analytics are required.
 
-## Project status
+## 填表上架活動
 
-The project is in its initial stage. Only this project overview is available; the website, event data, technology stack, and deployment workflow have yet to be implemented.
+1. 編輯根目錄的 [`event.csv`](event.csv)，一列一場活動；`*` 欄位為必填，活動名稱、簡介與地點皆須填中英雙語。其他選填內容若有填寫，也須提供對應英文。
+2. 完成並確認資訊後把 `publish` 改為 `true`。目前兩筆範例均為 `false`，不會自動公告。
+3. 合併至 `main` 後，GitHub Actions 自動檢查、建置並部署 GitHub Pages。也可在 Actions 手動執行 **Validate and deploy Pages**，選擇 `main` 重建。
 
-- Repository: [COSCUP/events](https://github.com/COSCUP/events)
-- Deployment target: GitHub Pages
+完整欄位、議程填法與上架流程見 [event.csv 填寫說明](docs/event-csv.md)。無須編輯 JSON 或產出檔；必填或格式有誤時不部署，Action log 會指出列號與欄位。
 
-## Planned features
+## Development
 
-- A list of upcoming events with their names, descriptions, dates, and locations.
-- Event information and external registration links.
-- Event and registration statuses, such as registration open, registration closed, ended, or cancelled.
-- Layouts suitable for mobile and desktop browsers.
-
-## Event data
-
-Each event should include the information below. The storage format and file locations will be decided during implementation.
-
-| Field | Description |
-| --- | --- |
-| Event name | Full public name of the event |
-| Description | Topic, content, and intended audience |
-| Date and time | Start and end times with a time zone; use `Asia/Taipei` for events in Taiwan |
-| Location | Physical venue and address, or instructions for joining online |
-| Event status | Whether the event is scheduled, ended, or cancelled |
-| Registration | Registration link, deadline, and status; clearly state when registration is not required |
-| Related links | Event website, detailed information, or organizer announcements |
-| Image | Optional image that may be publicly displayed, with alternative text |
-
-When updating events, check the organizer's announcements to confirm dates, locations, and links. Update the displayed status when an event changes or ends, or when registration closes.
-
-## Getting the project
+Use Node.js 24.15+ (or 22.22.3+ in the Node 22 line).
 
 ```bash
-git clone https://github.com/COSCUP/events.git
-cd events
+npm ci
+npm run dev
 ```
 
-There is no runnable website, package installation, or start command yet. Development setup, local preview, and build instructions will be added once the technology stack is chosen.
+Open the local URL printed by Nuxt. The default deployment prefix is `/events/`.
 
-## GitHub Pages deployment plan
+Development uses the labelled examples in `fixtures/events.csv`. Their details, registration states and capacity snapshots are **illustrative, not announcements**. Only these design fixtures allow incomplete content to exercise missing-content and translation-fallback layouts; `event.csv` always uses the stricter publication rules. Example registration links open COSCUP's KKTIX directory. Capacity figures are hidden when their original timestamps are not fresh; the site does not use a simulated clock.
 
-After the website is implemented, configure deployment according to the build approach:
+Production uses **only rows with `publish=true` in `event.csv`**. The initial examples are drafts, so production renders the empty state until confirmed events are published. Set `EVENTS_DEMO=0` when running the development server to preview this catalog; CSV changes reload the server. Draft rows never enter the site output, but the repository itself is public.
 
-1. Set the publishing source under **Settings → Pages** in the repository.
-2. For static files that do not require a build, choose **Deploy from a branch** and select the publishing branch and site directory (the root directory or `/docs`).
-3. For a site that requires a build, choose **GitHub Actions** and create a workflow to build and publish the static output.
+## Build and preview
 
-See the [GitHub Pages documentation on configuring a publishing source](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site). This repository does not yet contain deployment configuration.
+```bash
+# Production: confirmed content only
+npm run generate
+npm run preview
 
-Without a custom domain, the expected project site URL is [https://coscup.github.io/events/](https://coscup.github.io/events/), according to the [GitHub Pages URL rules](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages). The actual URL depends on the Pages settings. During implementation, account for the `/events/` base path in page links and static asset paths, and verify images, styles, and registration links after deployment.
+# Review the design examples separately
+npm run generate:demo
+npm run preview:demo
+```
+
+Production output is `.output/public`; example output is `.output-demo/public`. The preview server serves the same prefix as Pages and returns HTTP 404 for unknown files. It binds to `127.0.0.1:4173`; use `PORT=4174` to run another instance.
+
+Paths below are application paths, appended to the deployment prefix:
+
+| Page | Chinese | English |
+| --- | --- | --- |
+| Upcoming events | `/events/` | `/en/events/` |
+| Event detail | `/events/<slug>/` | `/en/events/<slug>/` |
+| About COSCUP | `/about/` | `/en/about/` |
+| Code of Conduct | `/code-of-conduct/` | `/en/code-of-conduct/` |
+
+For example, with the default prefix, an event URL is `/events/events/<slug>/`. The root `/events/` is a rendered listing and chooses the remembered language after the page becomes interactive. Explicit language URLs always take precedence over preferences.
+
+Example-only review URLs include `/events/?example=empty`, `/events/?example=single`, and the `simple-meetup`, `no-intro`, `translation-example`, and `online-gathering` detail slugs. These additional scenarios are not listed as upcoming events and are not generated in production.
+
+## Publishing events
+
+The [CSV authoring guide](docs/event-csv.md) documents all 55 columns. The ten required fields are `slug`, `title_zh`, `title_en`, `intro_zh`, `intro_en`, `starts_at`, `format`, `venue_zh`, `venue_en`, and `registration_mode`; `registration_url` is also required for external registration in `info` or `open` status. Other content is optional, but every supplied localized field must include both Chinese and English, including individual list items and schedule notes. `publish=true` explicitly opts a record into the build.
+
+Use UTF-8 CSV; spreadsheet quotes, commas, CRLF and multiline cells are supported. Local dates such as `2027-01-16 13:00` default to Taiwan (UTC+8); explicit offsets are preserved. Slugs must be unique and stable. External links must use HTTP or HTTPS. CSV parsing runs through the existing [event schema](shared/events.ts) before any pages are built.
+
+Missing required content or translations blocks publication; incomplete draft rows remain allowed. Optional sections are omitted when empty; missing fees, capacity or end times are never invented. Availability snapshots expire after 15 minutes; no live capacity integration is included. `listed=false` hides a published event from lists and feeds but leaves its detail pages public; use `publish=false` to remove it from the build entirely.
+
+For activities without registration, set `registration_mode=free` and leave `registration_url` blank. The primary action is **加入行事曆 / Add to calendar**, which downloads an `.ics` file directly. A confirmed online entrance may take the primary position while the detail page retains the calendar action. See the [registration-free event rules](docs/event-csv.md#免報名活動).
+
+Visible time-sensitive status refreshes in the browser every 30 seconds and when the tab returns to the foreground. HTML, RSS, subscription calendars, the sitemap and Agent files are static snapshots refreshed on deployment. Subscribers control their calendar polling interval.
+
+## Agent-readable content
+
+The build generates `/events/llms.txt` using the [llms.txt format](https://llmstxt.org/), with links to the full Chinese and English event Markdown at `/events/events/<slug>/index.md` and `/events/en/events/<slug>/index.md`. All use the same validated CSV data as the HTML pages. The HTML declares `rel="describedby"` for the index and `rel="alternate"` for event Markdown. Drafts are excluded; demo builds explicitly label their examples.
+
+## Validation
+
+```bash
+npm run check:events
+npm run typecheck
+npm test
+npm run generate
+```
+
+These are the core publishing checks used by CI. Domain tests include CSV parsing, publication rules and Agent output as well as the existing registration and calendar rules. The optional browser suite remains available when changing the interface:
+
+```bash
+npm run generate:demo
+npx playwright install chromium
+npm run test:e2e
+```
+
+Browser tests run against the generated example site under `/events/`, covering direct links and reloads, language and return context, sharing, calendar downloads, mobile registration controls, official text, keyboard navigation, accessibility, and 320/390/768/1024/1440px layouts.
+
+Screenshots are saved to the ignored `artifacts/screenshots/` directory. If a compatible Chromium is already installed, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its executable path. Automated browser checks do not constitute physical-device or screen-reader testing. Tests never submit registrations or newsletter subscriptions.
+
+## GitHub Pages
+
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml) runs on pushes to `main` (including every `event.csv` update), pull requests targeting `main`, and manual dispatch. Only a successful, non-PR build on `main` deploys `.output/public`; example builds are never uploaded to Pages. Failed CSV validation prevents deployment and leaves the previous site intact.
+
+The repository's publishing source is already **GitHub Actions**, with the site at [coscup.org/events](https://coscup.org/events/). The default configuration matches that host and `/events/` prefix. For another host or path, set `NUXT_PUBLIC_SITE_URL` and `NUXT_APP_BASE_URL` at build time, then regenerate; `.env.example` documents the defaults.
+
+No server, database, secrets or API tokens are required. The workflow uses GitHub's normal Pages permissions. Review implementation changes on their branch before merging to `main`.
+
+## Content and assets
+
+- About COSCUP reproduces the official Chinese and English text from the [2026 website](https://coscup.org/2026/about/), under the [COSCUP repository's MIT license](public/licenses/coscup-2026-MIT.txt).
+- The Code of Conduct preserves the official `v20240109` Chinese and English text, including its existing translation differences, references and Chinese changelog. It is attributed on each page under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- COSCUP logos are official supplied assets. Trademark rights remain with their owner.
+- Social icons are from Tabler Icons, with the [MIT notice](public/licenses/tabler-MIT.txt) retained.
+- Noto Sans TC and IBM Plex Mono use the SIL Open Font License; copies are in `public/licenses/`.
+
+Design review exports and local QA artifacts are excluded from the published repository and build output.
