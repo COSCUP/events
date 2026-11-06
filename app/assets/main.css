@@ -25,6 +25,8 @@
 }
 *, *::before, *::after { box-sizing: border-box; }
 body { margin: 0; }
+#__nuxt { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+#__nuxt > main { flex: 1 0 auto; }
 button, input { font: inherit; }
 button, a, input { -webkit-tap-highlight-color: transparent; }
 button, a { touch-action: manipulation; }
