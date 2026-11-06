@@ -8,9 +8,9 @@ import { generateEventOgImages } from '../scripts/event-og-images.ts'
 
 test('bilingual homepage and event OG images fit their content', async () => {
   const required = {
-    publish: 'true', slug: 'required-only', title_zh: 'COSCUP 小聚', title_en: 'COSCUP Meetup',
+    publish: 'true', slug: 'required-only', title_zh: 'COSCUP 小聚 @ MozTW', title_en: 'COSCUP Meetup @ MozTW',
     intro_zh: '交流開源專案。', intro_en: 'Discuss open-source projects.',
-    starts_at: '2026-11-14 18:30', format: 'online', venue_zh: '線上', venue_en: 'Online',
+    starts_at: '2026-11-14 18:30', format: 'in-person', venue_zh: 'MozTW', venue_en: 'MozTW',
     address_zh: '', address_en: '', registration_mode: 'free',
   }
   const records = [
@@ -39,6 +39,7 @@ test('bilingual homepage and event OG images fit their content', async () => {
   const csv = [columns, ...records.map(record => columns.map(column => record[column]))].map(row => row.map(quote).join(',')).join('\n')
   const events = parseEventCsv(csv)
   const directory = resolve('artifacts/og-cases')
+  const background = resolve('app/assets/og/tito-rollis-s9vNTRLoWl8-unsplash.jpg')
   type Draw = { text: string; x: number; y: number; left: number; right: number; top: number; bottom: number }
   const frames = new Map<SKRSContext2D, Draw[]>()
   const prototype = Object.getPrototypeOf(createCanvas(1, 1).getContext('2d')) as SKRSContext2D
@@ -53,7 +54,7 @@ test('bilingual homepage and event OG images fit their content', async () => {
     return original.apply(this, args)
   }
   try {
-    await generateEventOgImages(events, directory, resolve('public/images/coscup-green.svg'))
+    await generateEventOgImages(events, directory, resolve('public/images/coscup-green.svg'), background)
   } finally {
     prototype.fillText = original
   }
@@ -63,21 +64,32 @@ test('bilingual homepage and event OG images fit their content', async () => {
       assert.ok(draw.left >= 48 && draw.right <= 1152, `Horizontal overflow: ${draw.text}`)
       assert.ok(draw.top >= 32 && draw.bottom <= 614, `Vertical overflow: ${draw.text}`)
     }
-    const title = draws.filter(draw => draw.y >= 140 && draw.y < 430)
-    const location = draws.filter(draw => draw.x === 576 && draw.y >= 504)
-    assert.ok(title.length >= 1 && title.length <= 3)
-    assert.ok(title.every(draw => draw.bottom < 406), 'Title overlaps the information band')
-    if (draws.some(draw => draw.text === 'DATE' || draw.text === '日期')) {
-      assert.ok(location.length >= 1 && location.length <= 3)
-      assert.ok(location.every(draw => draw.left > 544), 'Location overlaps the date')
+    if (draws.some(draw => draw.x === 876)) {
+      const title = draws.filter(draw => draw.y >= 140 && draw.y < 430)
+      const location = draws.filter(draw => draw.x === 56 && draw.y >= 444 && draw.y < 530)
+      const address = draws.filter(draw => draw.x === 56 && draw.y >= 530)
+      assert.ok(title.length >= 1 && title.length <= 3)
+      assert.ok(title.every(draw => draw.bottom < 424), 'Title overlaps venue details')
+      assert.ok(title.every(draw => !/^[，。！？；：、）》」』】,.!?:;]/u.test(draw.text)), 'Closing punctuation starts a title line')
+      assert.ok(location.length >= 1 && location.length <= 2)
+      assert.ok(location.every(draw => draw.bottom < 524), 'Venue overlaps the address')
+      assert.ok(address.length <= 2)
+      assert.ok([...location, ...address].every(draw => draw.right < 824), 'Location overlaps the date')
     }
   }
   const drawnText = [...frames.values()].flat().map(draw => draw.text)
-  assert.equal(drawnText.filter(value => value === '2026.11.15').length, 2, 'Dates use Taiwan time')
+  assert.equal(drawnText.filter(value => value === '11.15').length, 2, 'Dates use Taiwan time')
+  assert.equal(drawnText.filter(value => value === '2026').length, events.length * 2)
   assert.ok(drawnText.some(value => value.endsWith('…')), 'Extreme text is visibly truncated')
   assert.ok(drawnText.some(value => value.includes('臺北市中正區')), 'Optional addresses appear')
-  assert.ok(drawnText.includes('COSCUP 活動'))
-  assert.ok(drawnText.includes('COSCUP Events'))
+  assert.ok(drawnText.includes('COSCUP 小聚'), 'Short names stay together when balancing title lines')
+  for (const expected of [records[1]!.title_zh, records[1]!.title_en]) {
+    const frame = [...frames.values()].find(draws => draws.some(draw => draw.text.startsWith(expected.slice(0, 8))))!
+    const title = frame.filter(draw => draw.y >= 140 && draw.y < 430).map(draw => draw.text).join('')
+    assert.equal(title.replace(/\s/g, ''), expected.replace(/\s/g, ''), 'Long ordinary titles fit without truncation')
+  }
+  assert.ok(drawnText.includes('活動'))
+  assert.ok(drawnText.includes('Events'))
   for (const event of events) {
     for (const locale of ['zh-TW', 'en']) {
       const image = readFileSync(join(directory, locale, `${event.slug}.png`))
@@ -87,7 +99,7 @@ test('bilingual homepage and event OG images fit their content', async () => {
     }
   }
   const emptyDirectory = join(directory, 'empty')
-  await generateEventOgImages([], emptyDirectory, resolve('public/images/coscup-green.svg'))
+  await generateEventOgImages([], emptyDirectory, resolve('public/images/coscup-green.svg'), background)
   for (const locale of ['zh-TW', 'en']) {
     const image = readFileSync(join(emptyDirectory, `home-${locale}.png`))
     assert.equal(image.subarray(0, 8).toString('hex'), '89504e470d0a1a0a')

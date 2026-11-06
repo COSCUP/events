@@ -24,7 +24,16 @@ function wrapText(context: SKRSContext2D, value: string, width: number, locale: 
   let line = ''
   const words = new Intl.Segmenter(locale, { granularity: 'word' })
   const characters = new Intl.Segmenter(locale, { granularity: 'grapheme' })
-  for (const { segment } of words.segment(value.replace(/\s+/g, ' ').trim())) {
+  // Preserve short names separated by spaces (e.g. 小聚); segment longer CJK phrases.
+  const tokens: string[] = []
+  for (const chunk of value.replace(/\s+/g, ' ').trim().match(/\s+|\S+/gu) || []) {
+    const parts = context.measureText(chunk).width <= width ? [chunk] : Array.from(words.segment(chunk), item => item.segment)
+    for (const part of parts) {
+      if (/^[，。！？；：、）》」』】,.!?:;%)]+$/u.test(part) && tokens.length) tokens[tokens.length - 1] += part
+      else tokens.push(part)
+    }
+  }
+  for (const segment of tokens) {
     if (context.measureText(line + segment).width <= width) { line += segment; continue }
     if (line.trim()) lines.push(line.trimEnd())
     line = ''
@@ -37,47 +46,74 @@ function wrapText(context: SKRSContext2D, value: string, width: number, locale: 
   return lines
 }
 
-type TextBox = { x: number; y: number; width: number; height: number; size: number; minSize: number; maxLines: number; centered?: boolean }
-const titleBox: TextBox = { x: 64, y: 164, width: 1072, height: 220, size: 76, minSize: 40, maxLines: 3, centered: true }
+type TextBox = { x: number; y: number; width: number; height: number; size: number; minSize: number; maxLines: number; weight?: number; leading?: number; balance?: boolean; centered?: boolean }
+const colors = { green: '#0c3c23', paper: '#f4f7f1', accent: '#d2edb3' }
+const titleBox: TextBox = { x: 56, y: 156, width: 1088, height: 250, size: 100, minSize: 36, maxLines: 3, weight: 800, leading: 1.12, balance: true, centered: true }
 
 function drawText(context: SKRSContext2D, value: string, locale: Locale, box: TextBox) {
   let size = box.size
   let lines: string[] = []
+  const leading = box.leading ?? 1.2
   for (; size >= box.minSize; size -= 2) {
-    context.font = `700 ${size}px ${fontFamily}`
+    context.font = `${box.weight ?? 700} ${size}px ${fontFamily}`
     lines = wrapText(context, value, box.width, locale)
-    if ((lines.length <= box.maxLines && lines.length * size * 1.2 <= box.height) || size === box.minSize) break
+    if ((lines.length <= box.maxLines && lines.length * size * leading <= box.height) || size === box.minSize) break
   }
   if (lines.length > box.maxLines) {
     lines = lines.slice(0, box.maxLines)
-    const last = Array.from(new Intl.Segmenter(locale, { granularity: 'grapheme' }).segment(lines.at(-1)!), item => item.segment)
+    const original = lines.at(-1)!
+    const last = Array.from(new Intl.Segmenter(locale, { granularity: 'grapheme' }).segment(original), item => item.segment)
     while (last.length && context.measureText(`${last.join('')}…`).width > box.width) last.pop()
-    lines[lines.length - 1] = `${last.join('').trimEnd()}…`
+    let ending = last.join('').trimEnd()
+    // Prefer a complete final word; unbroken strings still fall back to grapheme-safe clipping.
+    if (ending !== original.trimEnd() && /[a-z\p{M}]$/iu.test(ending) && ending.includes(' ')) ending = ending.slice(0, ending.lastIndexOf(' ')).trimEnd()
+    lines[lines.length - 1] = `${ending}…`
+  } else if (box.balance && lines.length > 1) {
+    // Keep the same line count while avoiding one short word stranded on the last line.
+    let low = box.width / 2
+    let high = box.width
+    while (high - low > 1) {
+      const width = (low + high) / 2
+      const balanced = wrapText(context, value, width, locale)
+      if (balanced.length <= lines.length) { high = width; lines = balanced }
+      else low = width
+    }
   }
-  const lineHeight = size * 1.2
-  const top = box.y + (box.centered ? (box.height - lines.length * lineHeight) / 2 : 0)
-  lines.forEach((line, index) => context.fillText(line, box.x, top + index * lineHeight))
+  const top = box.y + (box.centered ? (box.height - lines.length * size * leading) / 2 : 0)
+  lines.forEach((line, index) => context.fillText(line, box.x, top + index * size * leading))
 }
 
-export async function generateEventOgImages(events: Event[], directory: string, logoPath: string) {
+export async function generateEventOgImages(events: Event[], directory: string, logoPath: string, backgroundPath: string) {
   loadFonts()
-  const logo = await loadImage(logoPath)
-  const createImage = () => {
+  const [logo, background] = await Promise.all([loadImage(logoPath), loadImage(backgroundPath)])
+  // Reuse the supplied brand artwork in white without depending on a second asset.
+  const whiteLogo = createCanvas(logo.width, logo.height)
+  const logoContext = whiteLogo.getContext('2d')
+  logoContext.drawImage(logo, 0, 0)
+  logoContext.globalCompositeOperation = 'source-in'
+  logoContext.fillStyle = colors.paper
+  logoContext.fillRect(0, 0, logo.width, logo.height)
+  const createImage = (home = false) => {
     const canvas = createCanvas(1200, 630)
     const context = canvas.getContext('2d')
     context.textBaseline = 'top'
-    context.fillStyle = '#f4f7f1'
+    context.fillStyle = home ? colors.accent : colors.green
     context.fillRect(0, 0, 1200, 630)
-    context.fillStyle = '#3b9838'
-    context.fillRect(0, 0, 1200, 8)
-    context.drawImage(logo, 64, 56, 168, 168 * logo.height / logo.width)
-    context.fillStyle = '#2c762a'
+    // Cover the canvas without stretching; opacity applies only to the photograph.
+    const scale = Math.max(1200 / background.width, 630 / background.height)
+    const width = background.width * scale
+    const height = background.height * scale
+    context.save()
+    context.globalAlpha = home ? 0.18 : 0.48
+    context.drawImage(background, (1200 - width) / 2, (630 - height) / 2, width, height)
+    context.restore()
+    if (!home) context.drawImage(whiteLogo, 52, 46, 154, 154 * logo.height / logo.width)
+    context.fillStyle = home ? colors.green : colors.accent
     context.font = `500 24px ${fontFamily}`
     context.textAlign = 'right'
-    context.fillText('coscup.org/events', 1136, 74)
+    context.fillText('coscup.org/events', 1144, 56)
     context.textAlign = 'left'
-    context.fillStyle = '#0c3c23'
-    context.fillRect(0, 430, 1200, 200)
+    context.fillStyle = home ? colors.green : colors.paper
     return { canvas, context }
   }
   // This directory contains generated images only; removed CSV rows leave no stale images.
@@ -85,25 +121,25 @@ export async function generateEventOgImages(events: Event[], directory: string, 
   for (const locale of ['zh-TW', 'en'] as const) {
     const output = join(directory, locale)
     mkdirSync(output, { recursive: true })
-    const home = createImage()
-    drawText(home.context, locale === 'en' ? 'COSCUP Events' : 'COSCUP 活動', locale, titleBox)
-    home.context.fillStyle = '#ffffff'
-    drawText(home.context, locale === 'en' ? 'Meetups · Workshops · Open-source events' : '社群聚會・工作坊・開源活動', locale, { x: 64, y: 464, width: 1072, height: 132, size: 40, minSize: 28, maxLines: 2, centered: true })
+    const home = createImage(true)
+    home.context.drawImage(logo, 40, 114, 720, 720 * logo.height / logo.width)
+    drawText(home.context, locale === 'en' ? 'Events' : '活動', locale, { x: 56, y: 392, width: 710, height: 160, size: 132, minSize: 132, maxLines: 1, weight: 800 })
+    home.context.font = `500 32px ${fontFamily}`
+    const topics = locale === 'en' ? ['Meetups', 'Workshops', 'Open-source events'] : ['社群聚會', '工作坊', '開源活動']
+    topics.forEach((topic, index) => home.context.fillText(topic, 820, 416 + index * 48))
     writeFileSync(join(directory, `home-${locale}.png`), await home.canvas.encode('png'))
     for (const event of events) {
       const { canvas, context } = createImage()
       drawText(context, text(event.title, locale), locale, titleBox)
-      context.fillStyle = '#5e8069'
-      context.fillRect(520, 468, 1, 114)
-      context.fillStyle = '#c3cfbd'
-      context.font = `500 22px ${fontFamily}`
-      context.fillText(locale === 'en' ? 'DATE' : '日期', 64, 464)
-      context.fillText(locale === 'en' ? 'VENUE' : '地點', 576, 464)
-      context.fillStyle = '#ffffff'
-      context.font = `700 46px ${fontFamily}`
-      context.fillText(taipeiDate(event.startsAt).replaceAll('-', '.'), 64, 504)
-      const location = [text(event.venue, locale), text(event.address, locale)].filter(Boolean).join(' · ')
-      drawText(context, location, locale, { x: 576, y: 504, width: 560, height: 96, size: 40, minSize: 24, maxLines: 3 })
+      drawText(context, text(event.venue, locale), locale, { x: 56, y: 444, width: 744, height: 80, size: 36, minSize: 30, maxLines: 2, leading: 1.12 })
+      const address = text(event.address, locale)
+      if (address) drawText(context, address, locale, { x: 56, y: 530, width: 744, height: 64, size: 26, minSize: 24, maxLines: 2, weight: 400 })
+      context.fillStyle = colors.accent
+      const date = taipeiDate(event.startsAt)
+      context.font = `500 30px ${fontFamily}`
+      context.fillText(date.slice(0, 4), 876, 444)
+      context.font = `800 88px ${fontFamily}`
+      context.fillText(date.slice(5).replace('-', '.'), 876, 488)
       writeFileSync(join(output, `${event.slug}.png`), await canvas.encode('png'))
     }
   }

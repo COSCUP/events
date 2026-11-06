@@ -16,13 +16,14 @@ const siteURL = process.env.NUXT_PUBLIC_SITE_URL || 'https://coscup.org'
 const ogDirectory = fileURLToPath(new URL('./.data/og', import.meta.url))
 mkdirSync(ogDirectory, { recursive: true })
 const logo = fileURLToPath(new URL('./public/images/coscup-green.svg', import.meta.url))
+const ogBackground = fileURLToPath(new URL('./app/assets/og/tito-rollis-s9vNTRLoWl8-unsplash.jpg', import.meta.url))
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-11-05',
   devtools: { enabled: false },
-  watch: [csvSource, fileURLToPath(new URL('./scripts/events-csv.ts', import.meta.url)), fileURLToPath(new URL('./scripts/event-og-images.ts', import.meta.url)), logo],
+  watch: [csvSource, fileURLToPath(new URL('./scripts/events-csv.ts', import.meta.url)), fileURLToPath(new URL('./scripts/event-og-images.ts', import.meta.url)), logo, ogBackground],
   hooks: {
-    'nitro:config': async () => { await generateEventOgImages(events, ogDirectory, logo) },
+    'nitro:config': async () => { await generateEventOgImages(events, ogDirectory, logo, ogBackground) },
   },
   app: {
     baseURL,
