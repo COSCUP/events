@@ -8,5 +8,5 @@ export const eventMarkdownHandler = (locale: Locale) => defineEventHandler((requ
   const config = useRuntimeConfig()
   const site = `${config.public.siteURL.replace(/\/$/, '')}${config.app.baseURL.replace(/\/$/, '')}`
   setHeader(request, 'Content-Type', 'text/markdown; charset=utf-8')
-  return eventMarkdown(event, locale, site, { demo: config.public.demo })
+  return eventMarkdown(event, locale, site)
 })

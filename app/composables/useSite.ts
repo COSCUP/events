@@ -24,7 +24,7 @@ const messages = {
     source: '內容來源', officialSource: '查看官方原文',
     also: '同期活動', openMap: '在地圖中開啟', applies: '全體參與者適用', readConduct: '閱讀行為準則',
     backEvent: '返回活動', notFound: '找不到這個頁面', notFoundNote: '網址可能已變更，請回近期活動查看最新資訊。',
-    announcement: '查看活動公告', demoAction: '此為示範活動；此連結開啟 COSCUP 的 KKTIX 活動列表。',
+    announcement: '查看活動公告',
   },
   en: {
     events: 'Events', upcoming: 'Upcoming events', conference: 'Conference', about: 'About COSCUP', conduct: 'Code of conduct',
@@ -44,7 +44,7 @@ const messages = {
     source: 'Source', officialSource: 'View official source',
     also: 'Also coming up', openMap: 'Open map', applies: 'Applies to all participants', readConduct: 'Read the code of conduct',
     backEvent: 'Back to event', notFound: 'Page not found', notFoundNote: 'This address may have changed. Visit upcoming events for the latest information.',
-    announcement: 'View announcement', demoAction: 'This is an example event. This link opens COSCUP’s event directory on KKTIX.',
+    announcement: 'View announcement',
   },
 } as const
 
@@ -65,11 +65,11 @@ export function useSite() {
     const event = events.find(event => event.slug === route.params.slug)
     return { path: path('/code-of-conduct/'), query: event ? { from: event.slug, entry } : undefined }
   }
-  return { locale, t, local, lang, path, asset, events, now, demo: config.public.demo, siteRoot, conductLink }
+  return { locale, t, local, lang, path, asset, events, now, siteRoot, conductLink }
 }
 
 export function usePageMeta(title: MaybeRefOrGetter<string>, description: MaybeRefOrGetter<string>) {
-  const { locale, siteRoot, demo } = useSite()
+  const { locale, siteRoot } = useSite()
   const route = useRoute()
   const cleanPath = computed(() => {
     const pathname = route.path === '/' ? '/events/' : route.path.replace(/^\/en(?=\/)/, '')
@@ -83,7 +83,7 @@ export function usePageMeta(title: MaybeRefOrGetter<string>, description: MaybeR
     ogDescription: () => toValue(description),
     ogType: 'website',
     ogUrl: () => canonical.value,
-    robots: demo ? 'noindex, nofollow' : 'index, follow',
+    robots: 'index, follow',
   })
   useHead(() => ({
     htmlAttrs: { lang: locale.value },

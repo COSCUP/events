@@ -15,7 +15,7 @@ const { share } = useEventActions()
     </div>
     <p v-if="registrationStatus(event, now) === 'soon' && event.registration.opensAt" class="tertiary">{{ t('opens') }} · {{ dateLabel(event.registration.opensAt, locale) }} {{ timeLabel(event.registration.opensAt) }} (UTC+8)</p>
     <div class="primary-action" data-primary-action><EventPrimaryAction :event="event" /></div>
-    <p class="registration-note tertiary">
+    <p v-if="event.registration.platform || event.fee || event.registration.closesAt" class="registration-note tertiary">
       <span v-if="event.registration.platform">{{ event.registration.platform }}</span><span v-if="event.fee" :lang="lang(event.fee)">{{ local(event.fee) }}</span><span v-if="event.registration.closesAt">{{ t('closes') }} {{ shortDateLabel(event.registration.closesAt, locale) }} {{ timeLabel(event.registration.closesAt) }}</span>
     </p>
     <p v-if="event.registration.mode === 'external' && event.registration.status === 'info'" class="tertiary">{{ t('officialNote') }}</p>

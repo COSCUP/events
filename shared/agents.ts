@@ -3,7 +3,7 @@ import { eventState, hasFallback, registrationStatus, text, type Event, type Loc
 const escape = (value: string) => value.replace(/([\\`*_[\]<>#|])/g, '\\$1')
 const inline = (value: string) => escape(value.replace(/\s+/g, ' ').trim())
 const link = (label: string, url: string) => `[${inline(label)}](<${new URL(url).href.replace(/[<>\s]/g, encodeURIComponent)}>)`
-type Options = { demo?: boolean; now?: number }
+type Options = { now?: number }
 
 export function llmsIndex(events: Event[], site: string, options: Options = {}): string {
   const now = options.now ?? Date.now()
@@ -11,7 +11,6 @@ export function llmsIndex(events: Event[], site: string, options: Options = {}):
   const lines = [
     '# COSCUP Events / COSCUP 活動', '',
     '> COSCUP 開源社群活動的中英雙語資訊、報名連結及參加指南。 Bilingual event information for the COSCUP open-source community.', '',
-    ...(options.demo ? ['This is a design demo. All event data is illustrative, not an announcement. 設計示意，非正式公告。', ''] : []),
     `Generated at ${new Date(now).toISOString()}. This is a static snapshot updated on deployment.`,
     'Dates use Asia/Taipei (UTC+8) unless an explicit offset is given. Published event content is available in Traditional Chinese and English.',
     'Registration takes place on the linked organizer website. A link alone does not mean registration is open; verify availability there.',
@@ -47,7 +46,6 @@ export function eventMarkdown(event: Event, locale: Locale, site: string, option
     if (value !== undefined && value !== '') lines.push(`- ${inline(label)}: ${inline(String(value))}`)
   }
   const url = (label: string, value?: string) => { if (value) lines.push(`- ${link(label, value)}`) }
-  if (options.demo) lines.push('> Design example only; not an announcement. 設計示意，非正式公告。', '')
   if (hasFallback(event, locale)) lines.push('Some fields are not translated into English. The original Chinese is retained.', '')
   lines.push(`Generated at ${new Date(now).toISOString()}; static snapshot. Verify current registration details with the organizer.`, '')
   url('Web page / 活動網頁', `${site}${locale === 'en' ? '/en' : ''}/events/${event.slug}/`)

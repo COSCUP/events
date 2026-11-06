@@ -7,8 +7,17 @@ import { parseEventCsv } from '../scripts/events-csv.ts'
 import { eventMarkdown, llmsIndex } from '../shared/agents.ts'
 import { renderMarkdown } from '../shared/markdown.ts'
 
-const examples = parseEventCsv(readFileSync(new URL('../fixtures/events.csv', import.meta.url), 'utf8'), { designExamples: true })
-const base = examples[0]!
+// Test-only records stay in memory and never enter the website catalog.
+const base = eventSchema.parse({
+  slug: 'test-event',
+  title: { 'zh-TW': '測試活動', en: 'Test event' },
+  intro: { 'zh-TW': '一起交流開源專案。', en: 'Discuss open-source projects together.' },
+  startsAt: '2026-11-14T13:00:00+08:00',
+  endsAt: '2026-11-14T17:30:00+08:00',
+  format: 'in-person',
+  venue: { 'zh-TW': '測試場地', en: 'Test venue' },
+  registration: { mode: 'external', status: 'open', url: 'https://example.org/register', closesAt: '2026-11-12T23:59:00+08:00' },
+})
 const now = Date.parse('2026-11-12T18:05:00+08:00')
 const copy = () => structuredClone(base)
 
@@ -87,21 +96,26 @@ test('calendar exports correct UTC, CRLF, escaped text, Unicode folding and stab
   assert.equal(google.searchParams.get('dates'), '20261114T050000Z/20261114T093000Z')
   assert.equal(google.searchParams.get('text'), base.title.en)
   assert.equal(google.searchParams.get('stz'), 'Asia/Taipei')
-  assert.ok(google.searchParams.get('details')!.includes('https://coscup.org/events/en/events/community-meetup-taipei/'))
+  assert.ok(google.searchParams.get('details')!.includes(`https://coscup.org/events/en/events/${base.slug}/`))
 })
 test('locale fallback is per field; omitted fields do not trigger a warning', () => {
-  assert.equal(hasFallback(examples[2]!, 'en'), false)
-  assert.equal(hasFallback(examples[4]!, 'en'), true)
-  assert.equal(text(examples[4]!.intro, 'en'), examples[4]!.intro!['zh-TW'])
+  const event = copy()
+  assert.equal(hasFallback(event, 'en'), false)
+  delete event.intro!.en
+  assert.equal(hasFallback(event, 'en'), true)
+  assert.equal(text(event.intro, 'en'), event.intro!['zh-TW'])
 })
-test('listing handles zero, one and multiple events; private fixtures stay off the list', () => {
+test('listing handles zero, one and multiple events; unlisted and ended events stay off the list', () => {
+  const freeEvent = copy(); freeEvent.slug = 'no-registration'; freeEvent.registration = { mode: 'free', status: 'info', joinReady: false }
+  const hidden = copy(); hidden.slug = 'unlisted'; hidden.listed = false
+  const ended = copy(); ended.slug = 'ended'; ended.state = 'ended'
+  const events = [base, freeEvent, hidden, ended]
   assert.equal(upcomingEvents([], now).length, 0)
   assert.equal(upcomingEvents([base], now).length, 1)
-  assert.equal(upcomingEvents(examples, now).length, 7)
-  const freeEvent = upcomingEvents(examples, now).find(event => event.slug === 'online-gathering')!
+  assert.deepEqual(upcomingEvents(events, now).map(event => event.slug), [base.slug, freeEvent.slug])
   assert.equal(freeEvent.registration.url, undefined)
   assert.deepEqual(primaryAction(freeEvent, now), { kind: 'calendar' })
-  assert.equal(upcomingEvents(examples, Date.parse('2027-01-01')).length, 0)
+  assert.equal(upcomingEvents(events, Date.parse('2027-01-01')).length, 0)
 })
 
 const csv = (rows: Record<string, string>[]) => {
@@ -121,6 +135,13 @@ test('spreadsheet CSV preserves bilingual quoted/multiline content and defaults 
   assert.equal(event!.audience![1]!.en, 'Maintainers')
   assert.equal(event!.agenda![1]!.title.en, 'Sharing')
   assert.equal(event!.travel![0]!.url, 'https://example.org/map')
+  assert.equal(event!.fee, undefined)
+  assert.ok(!eventMarkdown(event!, 'en', 'https://example.org/events').includes('- Fee / 費用:'))
+  for (const [zh, en] of [['免費', 'Free'], ['NT$ 200', 'NT$200']]) {
+    const [priced] = parseEventCsv(csv([{ ...csvEvent, fee_zh: zh!, fee_en: en! }]))
+    assert.deepEqual(priced!.fee, { 'zh-TW': zh, en })
+    assert.ok(eventMarkdown(priced!, 'en', 'https://example.org/events').includes(`- Fee / 費用: ${en}`))
+  }
 })
 test('invalid publish flags, required fields, duplicate slugs and malformed sections have actionable CSV errors', () => {
   assert.throws(() => parseEventCsv(csv([{ ...csvEvent, publish: 'yes' }])), /row 2.*\[publish\]/)
@@ -153,8 +174,8 @@ test('agent details include localized content, preserve fallback and omit unconf
   event.registration.joinUrl = 'https://example.org/not-ready'
   const markdown = eventMarkdown(event, 'en', 'https://example.org/events', { now })
   assert.ok(markdown.includes(event.title.en!))
-  assert.ok(markdown.includes('Birds of a Feather'))
-  assert.ok(markdown.includes('https://example.org/events/en/events/community-meetup-taipei/'))
+  assert.ok(markdown.includes(event.intro!.en!))
+  assert.ok(markdown.includes(`https://example.org/events/en/events/${event.slug}/`))
   assert.ok(!markdown.includes('not-ready'))
   delete event.intro!.en
   const fallback = eventMarkdown(event, 'en', 'https://example.org/events', { now })

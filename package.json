@@ -8,9 +8,7 @@
   "scripts": {
     "dev": "nuxt dev --host 127.0.0.1",
     "generate": "nuxt generate",
-    "generate:demo": "EVENTS_DEMO=1 nuxt generate",
     "preview": "node scripts/preview.mjs",
-    "preview:demo": "node scripts/preview.mjs --demo",
     "typecheck": "nuxt typecheck",
     "check:events": "node --experimental-strip-types scripts/check-events.ts",
     "test": "node --experimental-strip-types tests/domain.test.ts",

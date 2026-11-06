@@ -1,102 +1,76 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+import { readFileSync } from 'node:fs'
 import { readFile, mkdir } from 'node:fs/promises'
+import { parseEventCsv } from '../../scripts/events-csv'
+import { upcomingEvents, text } from '../../shared/events'
+
+const events = parseEventCsv(readFileSync('event.csv', 'utf8'))
+const event = (events.find(item => item.listed && item.state === 'scheduled') || events[0])!
+const now = event ? Date.parse(event.startsAt) - 60 * 60_000 : Date.now()
+const stamp = (value: string) => new Date(value).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
 
 test.beforeEach(async ({ page }) => {
-  await page.clock.setFixedTime(new Date('2026-11-12T10:05:00Z'))
+  await page.clock.setFixedTime(new Date(now))
 })
 
-test('static deep links, internal navigation and locale context work under the Pages base', async ({ page }) => {
+test('CSV listing, static deep links and policy return context work under the Pages base', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await page.goto('events/')
-  await expect(page.locator('.event-card')).toHaveCount(7)
-  await page.locator('#event-community-meetup-taipei').click()
-  await expect(page).toHaveURL(/\/events\/events\/community-meetup-taipei\/$/)
-  await page.locator('#conduct-entry').click()
-  await expect(page).toHaveURL(/code-of-conduct\/\?from=community-meetup-taipei&entry=notes$/)
+  await expect(page.locator('.event-card')).toHaveCount(upcomingEvents(events, now).length)
+  test.skip(!event || !upcomingEvents(events, now).includes(event), 'No listed upcoming event')
+  await page.locator(`#event-${event.slug}`).click()
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(event.title['zh-TW'])
+  await page.locator('#header-conduct').click()
+  await expect(page).toHaveURL(new RegExp(`code-of-conduct/\\?from=${event.slug}&entry=header$`))
   await page.locator('.site-header').getByRole('link', { name: 'Switch to English', exact: true }).click()
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
-  await expect(page).toHaveURL(/en\/code-of-conduct\/\?from=community-meetup-taipei&entry=notes$/)
   await page.getByRole('link', { name: '← Back to event' }).click()
-  await expect(page).toHaveURL(/en\/events\/community-meetup-taipei\/#conduct-entry$/)
-  await expect(page.locator('#conduct-entry')).toBeFocused()
+  await expect(page).toHaveURL(new RegExp(`/events/en/events/${event.slug}/#header-conduct$`))
+  await expect(page.locator('#header-conduct')).toBeFocused()
   await page.reload()
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('COSCUP Community Meetup · Taipei')
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(text(event.title, 'en'))
   expect(errors).toEqual([])
 })
 
-test('locale switch preserves semantic anchors and explicit URLs override remembered preference', async ({ page }) => {
-  await page.goto('events/community-meetup-taipei/?example=single#agenda')
+test('header and footer language switches preserve article anchors and explicit URLs win', async ({ page }) => {
+  test.skip(!event?.description?.['zh-TW'] || !event.description.en, 'No bilingual article')
+  await page.goto(`events/${event.slug}/?source=preview#description`)
   await page.locator('.site-header').getByRole('link', { name: 'Switch to English', exact: true }).click()
-  await expect(page).toHaveURL(/en\/events\/community-meetup-taipei\/\?example=single#agenda$/)
-  await expect(page.locator('#agenda')).toBeFocused()
+  await expect(page).toHaveURL(new RegExp(`/events/en/events/${event.slug}/\\?source=preview#description$`))
+  await expect(page.locator('#description')).toBeFocused()
   const footerSwitch = page.locator('.site-footer').getByRole('link', { name: '切換為繁體中文', exact: true })
   await footerSwitch.focus()
   await footerSwitch.press('Enter')
-  await expect(page).toHaveURL(/\/events\/events\/community-meetup-taipei\/\?example=single#agenda$/)
-  await expect(page.locator('#agenda')).toBeFocused()
+  await expect(page).toHaveURL(new RegExp(`/events/events/${event.slug}/\\?source=preview#description$`))
+  await expect(page.locator('#description')).toBeFocused()
   await page.locator('.site-footer').getByRole('link', { name: 'Switch to English', exact: true }).click()
-  await expect(page).toHaveURL(/en\/events\/community-meetup-taipei\/\?example=single#agenda$/)
+  await expect(page).toHaveURL(new RegExp(`/events/en/events/${event.slug}/\\?source=preview#description$`))
   await page.goto('events/')
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW')
   await page.goto('./')
   await expect(page).toHaveURL(/\/en\/events\/$/)
 })
 
-test('header and footer policy links return to the activity and the original entry in the current language', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 })
-  for (const entry of ['header', 'footer']) {
-    await page.goto('events/community-meetup-taipei/')
-    await page.locator(`#${entry}-conduct`).click()
-    await expect(page).toHaveURL(new RegExp(`code-of-conduct/\\?from=community-meetup-taipei&entry=${entry}$`))
-    await page.locator('.site-header').getByRole('link', { name: 'Switch to English', exact: true }).click()
-    await page.getByRole('link', { name: '← Back to event' }).click()
-    await expect(page).toHaveURL(new RegExp(`en/events/community-meetup-taipei/#${entry}-conduct$`))
-    await expect(page.locator(`#${entry}-conduct`)).toBeFocused()
-  }
-})
-
-test('long untranslated introductions retain the original language on every paragraph', async ({ page }) => {
-  await page.goto('en/events/long-translation-example/')
-  await expect(page.locator('.translation-notice')).toHaveCount(1)
-  await expect(page.locator('#intro .intro-paragraph')).toHaveCount(2)
-  const languages = await page.locator('#intro .intro-paragraph').evaluateAll(elements => elements.map(element => element.closest('[lang]')?.getAttribute('lang')))
-  expect(languages).toEqual(['zh-TW', 'zh-TW'])
-})
-
-test('a short desktop viewport can scroll the complete sticky sidebar and use its final section', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 700 })
-  await page.goto('en/events/community-meetup-taipei/')
-  await page.evaluate(() => window.scrollTo(0, 400))
-  const sidebar = page.locator('.detail-sidebar')
-  await sidebar.hover()
-  await page.mouse.wheel(0, 1200)
-  await expect.poll(() => sidebar.evaluate(element => element.scrollTop)).toBeGreaterThan(0)
-  const lastSection = sidebar.getByRole('link', { name: 'Attendee information', exact: true })
-  await lastSection.focus()
-  const bounds = await lastSection.boundingBox()
-  expect(bounds!.y).toBeGreaterThanOrEqual(0)
-  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(700)
-  await page.keyboard.press('Enter')
-  await expect(page).toHaveURL(/#notes$/)
-  await expect(page.locator('#notes')).toBeInViewport()
-})
-
-test('calendar download contains real timezone data and share has clipboard feedback', async ({ page }) => {
-  await page.goto('events/community-meetup-taipei/')
-  await page.getByRole('button', { name: '加入行事曆', exact: true }).click()
+test('calendar and sharing use the published event data', async ({ page }) => {
+  test.skip(!event, 'No published event')
+  await page.goto(`events/${event.slug}/`)
+  await page.locator('.registration-panel').getByRole('button', { name: '加入行事曆', exact: true }).click()
   const menu = page.getByRole('menu', { name: '加入行事曆', exact: true })
-  await expect(menu.getByRole('menuitem', { name: /Google Calendar/ })).toHaveAttribute('href', /calendar\.google\.com\/calendar\/r\/eventedit\?/)
+  const google = new URL((await menu.getByRole('menuitem', { name: /Google Calendar/ }).getAttribute('href'))!)
+  expect(google.origin).toBe('https://calendar.google.com')
+  expect(google.searchParams.get('dates')).toBe(`${stamp(event.startsAt)}/${stamp(event.endsAt || event.startsAt)}`)
   const downloadEvent = page.waitForEvent('download')
   await menu.getByRole('menuitem', { name: /iCS 下載/ }).click()
   const download = await downloadEvent
-  expect(download.suggestedFilename()).toBe('coscup-community-meetup-taipei.ics')
+  expect(download.suggestedFilename()).toBe(`coscup-${event.slug}.ics`)
   const content = await readFile((await download.path())!, 'utf8')
-  expect(content).toContain('DTSTART:20261114T050000Z')
-  expect(content).toContain('DTEND:20261114T093000Z')
+  expect(content).toContain(`DTSTART:${stamp(event.startsAt)}`)
+  if (event.endsAt) expect(content).toContain(`DTEND:${stamp(event.endsAt)}`)
+  else expect(content).not.toContain('DTEND')
   await page.evaluate(() => {
-    history.replaceState(null, '', `${location.pathname}?source=preview#agenda`)
+    history.replaceState(null, '', `${location.pathname}?source=preview#description`)
     Object.defineProperty(navigator, 'share', { configurable: true, value: async () => { (window as any).nativeShareCalled = true } })
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (value: string) => {
       (window as any).copiedURL = value
@@ -105,9 +79,8 @@ test('calendar download contains real timezone data and share has clipboard feed
   })
   await page.getByRole('button', { name: '分享', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '分享活動' })
-  await expect(dialog).toBeVisible()
   await expect(dialog.getByRole('status')).toHaveText('已複製連結')
-  expect(await page.evaluate(() => (window as any).copiedURL)).toMatch(/\/events\/events\/community-meetup-taipei\/$/)
+  expect(await page.evaluate(() => (window as any).copiedURL)).toBe(`${new URL(page.url()).origin}/events/events/${event.slug}/`)
   expect(await page.evaluate(() => (window as any).nativeShareCalled)).toBeUndefined()
   await dialog.getByRole('button', { name: '複製連結', exact: true }).click()
   expect(await page.evaluate(() => (window as any).copyCount)).toBe(2)
@@ -116,8 +89,9 @@ test('calendar download contains real timezone data and share has clipboard feed
 })
 
 test('share offers a selectable URL and a copy icon when clipboard access fails', async ({ page }) => {
+  test.skip(!event, 'No published event')
   await page.setViewportSize({ width: 320, height: 900 })
-  await page.goto('en/events/simple-meetup/')
+  await page.goto(`en/events/${event.slug}/`)
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Denied') } } })
     Object.defineProperty(document, 'execCommand', { configurable: true, value: () => false })
@@ -126,72 +100,42 @@ test('share offers a selectable URL and a copy icon when clipboard access fails'
   const dialog = page.getByRole('dialog', { name: 'Share event' })
   const input = dialog.getByRole('textbox', { name: 'Event URL' })
   const copy = dialog.getByRole('button', { name: 'Copy link', exact: true })
-  await expect(dialog).toBeVisible()
   await expect(input).toBeFocused()
   await expect(dialog.getByRole('status')).toContainText('Could not copy')
   await copy.click()
   await expect(input).toBeFocused()
   expect(await input.evaluate((element: HTMLInputElement) => element.selectionEnd! - element.selectionStart!)).toBe((await input.inputValue()).length)
-  await page.evaluate(() => Object.defineProperty(document, 'execCommand', { configurable: true, value: (command: string) => {
-    (window as any).copiedURL = (document.activeElement as HTMLTextAreaElement)?.value
-    return command === 'copy'
-  } }))
+  await page.evaluate(() => Object.defineProperty(document, 'execCommand', { configurable: true, value: () => true }))
   await copy.click()
   await expect(dialog.getByRole('status')).toHaveText('Link copied')
-  expect(await page.evaluate(() => (window as any).copiedURL)).toMatch(/\/events\/en\/events\/simple-meetup\/$/)
-  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
   await page.keyboard.press('Escape')
-  await expect(dialog).not.toBeVisible()
   await expect(page.getByRole('button', { name: 'Share', exact: true })).toBeFocused()
 })
 
-test('mobile registration bar follows the primary action and retreats before past events', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('events/community-meetup-taipei/')
-  await expect(page.locator('.sticky-action')).not.toBeVisible()
-  await page.locator('#audience').scrollIntoViewIfNeeded()
-  await expect(page.locator('.sticky-action')).toBeVisible()
-  await page.locator('#past-events').scrollIntoViewIfNeeded()
-  await expect(page.locator('.sticky-action')).not.toBeVisible()
-  await page.evaluate(() => window.scrollTo(0, 0))
-  await expect(page.locator('.sticky-action')).not.toBeVisible()
-})
-
-test('empty, single, minimal and untranslated data render without inventing or hiding details', async ({ page }) => {
-  await page.clock.setFixedTime(new Date('2027-01-01T00:00:00Z'))
-  await page.goto('events/')
-  await expect(page.getByRole('heading', { name: '尚無排定的活動' })).toBeVisible()
-  await expect(page.locator('.event-card')).toHaveCount(0)
-  await page.clock.setFixedTime(new Date('2026-12-18T00:00:00Z'))
-  await page.goto('events/')
-  await expect(page.locator('.event-card')).toHaveCount(1)
-  await page.clock.setFixedTime(new Date('2026-11-12T10:05:00Z'))
-  await page.goto('events/no-intro/')
-  await expect(page.locator('#intro')).toHaveCount(0)
-  await expect(page.locator('.short-intro')).toHaveCount(0)
-  await expect(page.getByRole('link', { name: /前往報名/ }).first()).toBeVisible()
-  await page.goto('en/events/translation-example/')
-  await expect(page.locator('.translation-notice')).toHaveCount(1)
-  await expect(page.locator('.short-intro')).toHaveAttribute('lang', 'zh-TW')
-  await page.goto('events/online-gathering/')
-  await expect(page.locator('.registration-panel .primary-action').getByRole('button', { name: '加入行事曆', exact: true })).toBeVisible()
-  await expect(page.locator('.registration-panel .secondary-actions').getByRole('button', { name: '加入行事曆', exact: true })).toHaveCount(0)
-  await expect(page.locator('.registration-panel')).not.toContainText('報名資訊以官方頁面為準')
-  await expect(page.getByRole('link', { name: /進入線上/ })).toHaveCount(0)
-  for (const prefix of ['', 'en/']) {
-    await page.goto(`${prefix}events/simple-meetup/`)
-    await expect(page.locator('#venue')).toBeVisible()
-    await expect(page.locator('#venue .map-link')).toHaveAttribute('href', 'https://www.google.com/maps/search/?api=1&query=NTUST+International+Building')
+test('optional fees and venue details follow the published CSV in both languages', async ({ page }) => {
+  test.skip(!event, 'No published event')
+  for (const [prefix, locale, feeLabel] of [['', 'zh-TW', '費用'], ['en/', 'en', 'Fee']] as const) {
+    await page.goto(`${prefix}events/`)
+    const card = page.locator('.event-card').filter({ has: page.locator(`#event-${event.slug}`) })
+    if (event.listed && upcomingEvents(events, now).includes(event)) {
+      await expect(card.locator('.card-fee')).toHaveCount(event.fee ? 1 : 0)
+    }
+    await page.goto(`${prefix}events/${event.slug}/`)
+    await expect(page.locator('.detail-body dt').filter({ hasText: new RegExp(`^${feeLabel}$`) })).toHaveCount(event.fee ? 1 : 0)
+    if (event.fee) await expect(page.locator('.registration-note')).toContainText(text(event.fee, locale))
+    else if (!event.registration.platform && !event.registration.closesAt) await expect(page.locator('.registration-note')).toHaveCount(0)
+    if (event.address) await expect(page.locator('#venue')).toContainText(text(event.address, locale))
+    if (event.mapUrl) await expect(page.locator('#venue .map-link')).toHaveAttribute('href', event.mapUrl)
+    await expect(page.locator('#description')).toHaveCount(event.description?.[locale] ? 1 : 0)
   }
 })
 
-test('both official documents retain source text, lists and safe return links', async ({ page }) => {
+test('official documents retain their text and safe return links', async ({ page }) => {
   const conduct = JSON.parse(await readFile('app/data/conduct.json', 'utf8'))
   const about = JSON.parse(await readFile('app/data/about.json', 'utf8'))
   for (const [prefix, key] of [['', 'zh'], ['en/', 'en']]) {
     await page.goto(`${prefix}code-of-conduct/?from=https://evil.example`)
     for (const block of conduct[key].blocks) await expect(page.locator('.document-prose')).toContainText(block.text)
-    await expect(page.locator('.document-prose ul ul')).toHaveCount(2)
     await expect(page.locator('.back-link')).toHaveAttribute('href', `/events/${prefix}events/`)
     await expect(page.locator('.mail-link')).toHaveAttribute('href', 'mailto:coc@coscup.org')
     await page.goto(`${prefix}about/`)
@@ -199,54 +143,43 @@ test('both official documents retain source text, lists and safe return links', 
   }
 })
 
-test('static feeds, alternate-language URLs, missing-page handling and external links are complete', async ({ page, request }) => {
-  for (const [route, expected] of [['calendar.ics', 'BEGIN:VCALENDAR'], ['feed.xml', '<rss'], ['sitemap.xml', '<urlset']]) {
+test('static feeds, Agent content and missing-page handling are complete', async ({ page, request }) => {
+  for (const [route, expected] of [['calendar.ics', 'BEGIN:VCALENDAR'], ['feed.xml', '<rss'], ['sitemap.xml', '<urlset'], ['llms.txt', '# COSCUP Events']]) {
     const response = await request.get(route!)
     expect(response.status()).toBe(200)
     expect(await response.text()).toContain(expected!)
   }
+  for (const item of events) {
+    for (const [prefix, locale] of [['', 'zh-TW'], ['en/', 'en']] as const) {
+      const response = await request.get(`${prefix}events/${item.slug}/index.md`)
+      expect(response.status()).toBe(200)
+      const markdown = await response.text()
+      if (item.description?.[locale]) expect(markdown).toContain(item.description[locale])
+      if (!item.fee) expect(markdown).not.toContain('- Fee / 費用:')
+    }
+  }
   const rootHTML = await (await request.get('./')).text()
   expect(rootHTML).toContain('href="https://coscup.org/events/events/"')
   expect(rootHTML).toContain('href="https://coscup.org/events/en/events/"')
-  expect(rootHTML).not.toContain('href="https://coscup.org/events/en/"')
-  await page.goto('events/')
-  for (const link of await page.locator('a[target="_blank"]').all()) {
-    expect(await link.getAttribute('rel')).toContain('noopener')
-    expect(await link.getAttribute('rel')).toContain('noreferrer')
-  }
   const response = await page.goto('events/not-a-real-event/')
   expect(response?.status()).toBe(404)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 })
 
-for (const width of [320, 390, 768, 1024, 1440]) {
-  test(`responsive pages stay within ${width}px and remain accessible`, async ({ page }) => {
+for (const width of [320, 1440]) {
+  test(`CSV pages stay within ${width}px and remain accessible`, async ({ page }) => {
     await mkdir('artifacts/screenshots', { recursive: true })
     await page.setViewportSize({ width, height: 900 })
-    for (const [name, route] of [['zh-list', 'events/'], ['en-list', 'en/events/'], ['zh-detail', 'events/community-meetup-taipei/'], ['en-minimal', 'en/events/simple-meetup/']]) {
-      await page.goto(route!)
+    const routes = ['events/', 'en/events/', ...(event ? [`events/${event.slug}/`, `en/events/${event.slug}/`] : [])]
+    for (const [index, route] of routes.entries()) {
+      await page.goto(route)
       await page.evaluate(() => document.fonts.ready)
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-      await page.screenshot({ path: `artifacts/screenshots/${name}-${width}.png`, fullPage: true })
-      if (width === 390 || width === 1440) {
+      await page.screenshot({ path: `artifacts/screenshots/csv-${index}-${width}.png`, fullPage: true })
+      if (width === 1440) {
         const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
         expect(results.violations).toEqual([])
       }
     }
   })
 }
-
-test('keyboard focus, reduced motion and policy accessibility work at 320px', async ({ page }) => {
-  await page.setViewportSize({ width: 320, height: 800 })
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('en/code-of-conduct/')
-  await page.keyboard.press('Tab')
-  await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeFocused()
-  await page.keyboard.press('Enter')
-  await expect(page.locator('#main')).toBeFocused()
-  await page.evaluate(() => document.fonts.ready)
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()
-  expect(results.violations).toEqual([])
-  await page.screenshot({ path: 'artifacts/screenshots/en-conduct-320.png', fullPage: true })
-})

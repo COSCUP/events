@@ -1,8 +1,7 @@
 import { parse } from 'csv-parse/sync'
 import { eventSchema, type Event, type Localized } from '../shared/events.ts'
 
-const coreRequired = ['slug', 'title_zh', 'starts_at', 'format', 'venue_zh', 'registration_mode']
-const required = [...coreRequired, 'title_en', 'venue_en', 'intro_zh', 'intro_en']
+const required = ['slug', 'title_zh', 'starts_at', 'format', 'venue_zh', 'registration_mode', 'title_en', 'venue_en', 'intro_zh', 'intro_en']
 const localizedFields = {
   title: 'title', venue: 'venue', intro: 'intro', category: 'category', address: 'address',
   language: 'language', language_note: 'languageNote', fee: 'fee',
@@ -50,7 +49,7 @@ function issueColumn(path: PropertyKey[]): string {
   return localized ? `${localized[0]}${suffix}` : Object.entries(scalarFields).find(([, value]) => value === root)?.[0] || String(root)
 }
 
-export function parseEventCsv(input: string, options: { source?: string; designExamples?: boolean } = {}): Event[] {
+export function parseEventCsv(input: string, options: { source?: string } = {}): Event[] {
   const source = options.source || 'event.csv'
   let headers: string[] = []
   let records: { record: Record<string, string>; info: { records: number; lines: number } }[]
@@ -88,11 +87,10 @@ export function parseEventCsv(input: string, options: { source?: string; designE
     }
     const publish = boolean('publish') ?? false
     if (!publish) continue
-    // Incomplete design fixtures exercise defensive rendering; published CSV content must be bilingual.
-    for (const column of options.designExamples ? coreRequired : required) if (!cell(column)) fail(column, '必填 / Required')
+    for (const column of required) if (!cell(column)) fail(column, '必填 / Required')
     const pair = (zh: string | undefined, en: string | undefined, column: string): Localized | undefined => {
       if (!zh && en) fail(`${column}_zh`, '英文有內容時須填對應中文 / Chinese is required when English is supplied')
-      if (zh && (!en || en === '-') && !options.designExamples) fail(`${column}_en`, '必填：請提供對應英文 / Required: provide the English translation')
+      if (zh && (!en || en === '-')) fail(`${column}_en`, '必填：請提供對應英文 / Required: provide the English translation')
       return zh ? { 'zh-TW': zh, ...(en ? { en } : {}) } : undefined
     }
     const localized = (column: string) => pair(cell(`${column}_zh`), cell(`${column}_en`), column)

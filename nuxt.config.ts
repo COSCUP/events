@@ -3,11 +3,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { parseEventCsv } from './scripts/events-csv'
 
 const development = process.env.NODE_ENV === 'development'
-const demo = process.env.EVENTS_DEMO === '1' || (development && process.env.EVENTS_DEMO !== '0')
-const csvSource = fileURLToPath(new URL(demo ? './fixtures/events.csv' : './event.csv', import.meta.url))
-const events = parseEventCsv(readFileSync(csvSource, 'utf8'), { source: demo ? 'fixtures/events.csv' : 'event.csv', designExamples: demo })
+const csvSource = fileURLToPath(new URL('./event.csv', import.meta.url))
+const events = parseEventCsv(readFileSync(csvSource, 'utf8'))
 // Only publishable records enter the client/server bundles; the source CSV is never served.
-const source = fileURLToPath(new URL(demo ? './.data/events-demo.json' : './.data/events.json', import.meta.url))
+const source = fileURLToPath(new URL('./.data/events.json', import.meta.url))
 mkdirSync(fileURLToPath(new URL('./.data/', import.meta.url)), { recursive: true })
 const compiled = JSON.stringify(events)
 if (!existsSync(source) || readFileSync(source, 'utf8') !== compiled) writeFileSync(source, compiled)
@@ -29,15 +28,15 @@ export default defineNuxtConfig({
     '@fontsource/ibm-plex-mono/latin-500.css',
     '~/assets/main.css',
   ],
-  runtimeConfig: { public: { demo, siteURL } },
+  runtimeConfig: { public: { siteURL } },
   experimental: { payloadExtraction: false },
   typescript: { strict: true },
   nitro: {
     preset: 'static',
-    // Nitro clears its output on startup; keep dev away from both static builds.
+    // Nitro clears its output on startup; keep dev away from the static build.
     output: development
       ? { dir: '.nuxt/dev-output', publicDir: '.nuxt/dev-output/public' }
-      : demo ? { dir: '.output-demo', publicDir: '.output-demo/public' } : undefined,
+      : undefined,
     prerender: {
       failOnError: true,
       routes: [

@@ -14,7 +14,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   webServer: {
-    command: 'npm run preview:demo',
+    command: 'npm run preview',
     url: 'http://127.0.0.1:4173/events/',
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
