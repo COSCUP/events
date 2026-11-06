@@ -37,4 +37,6 @@ For UI changes, install Chromium with `npx playwright install chromium`, then ru
 
 ## Licenses
 
+Source code is licensed under the [MIT License](LICENSE).
+
 The Code of Conduct is [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). About-page content and icons use MIT; fonts use SIL OFL. [License notices](public/licenses/) are included. COSCUP retains rights to its logos.
