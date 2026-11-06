@@ -1,14 +1,8 @@
 <script setup lang="ts">
 import { upcomingEvents, eventState, monthDayLabel, taipeiDate } from '#shared/events'
-const { locale, local, lang, path, t, events, now, demo, asset, siteRoot } = useSite()
-const route = useRoute()
-const upcoming = computed(() => {
-  const result = upcomingEvents(events, now.value)
-  if (demo && route.query.example === 'empty') return []
-  return demo && route.query.example === 'single' ? result.slice(0, 1) : result
-})
-const previousEvent = computed(() => events.filter(event => event.listed && eventState(event, now.value) === 'ended').sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt))[0]
-  || (demo && route.query.example === 'empty' ? events.find(event => event.listed) : undefined))
+const { locale, local, lang, path, t, events, now, asset, siteRoot } = useSite()
+const upcoming = computed(() => upcomingEvents(events, now.value))
+const previousEvent = computed(() => events.filter(event => event.listed && eventState(event, now.value) === 'ended').sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt))[0])
 const previousDate = computed(() => {
   if (!previousEvent.value) return ''
   const date = previousEvent.value.startsAt
@@ -41,11 +35,10 @@ usePageMeta(() => t('upcoming'), () => locale.value === 'en' ? 'Find COSCUP meet
             <div class="last-event-info">
               <div class="last-event-meta"><time class="mono" :datetime="previousEvent.startsAt">{{ previousDate }}</time><StatusBadge status="ended" /></div>
               <h3 :lang="lang(previousEvent.title)">{{ local(previousEvent.title) }}</h3>
-              <p v-if="previousEvent.recordUrl || demo" class="secondary">{{ locale === 'en' ? 'Slides, recordings, and notes' : '簡報・錄影・共筆' }}</p>
+              <p v-if="previousEvent.recordUrl" class="secondary">{{ locale === 'en' ? 'Slides, recordings, and notes' : '簡報・錄影・共筆' }}</p>
             </div>
             <div class="last-event-actions">
               <ExternalLink v-if="previousEvent.recordUrl" class="button secondary-button" :href="previousEvent.recordUrl">{{ t('recap') }}</ExternalLink>
-              <span v-else-if="demo" class="button secondary-button" aria-disabled="true" :title="locale === 'en' ? 'Example event; recap link is not available.' : '示範活動，尚無活動紀錄連結。'">{{ t('recap') }} ↗</span>
               <NuxtLink class="text-link" :to="path(`/events/${previousEvent.slug}/`)">{{ locale === 'en' ? 'Event page' : '活動頁' }} →</NuxtLink>
             </div>
           </article>

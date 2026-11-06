@@ -20,12 +20,11 @@ const registrationFields = {
 export const eventCsvColumns = [
   'publish', 'slug', 'title_zh', 'title_en', 'starts_at', 'ends_at', 'format', 'venue_zh', 'venue_en',
   'registration_mode', 'registration_url', 'registration_status',
-  'intro_zh', 'intro_en', 'category_zh', 'category_en', 'address_zh', 'address_en', 'map_url',
-  'language_zh', 'language_en', 'language_note_zh', 'language_note_en', 'fee_zh', 'fee_en', 'capacity', 'check_in',
+  'intro_zh', 'intro_en', 'description_zh', 'description_en', 'category_zh', 'category_en', 'address_zh', 'address_en', 'map_url',
+  'language_zh', 'language_en', 'language_note_zh', 'language_note_en', 'fee_zh', 'fee_en', 'check_in',
   'registration_platform', 'registration_opens_at', 'registration_closes_at', 'registration_note_zh', 'registration_note_en',
   'waitlist_url', 'join_url', 'join_ready', 'audience_zh', 'audience_en', 'preparation_zh', 'preparation_en',
   'agenda_zh', 'agenda_en', 'travel_zh', 'travel_en', 'participation_zh', 'participation_en', 'notices_zh', 'notices_en',
-  'availability_remaining', 'availability_source', 'availability_updated_at', 'availability_valid',
   'state', 'listed', 'record_url', 'announcement_url',
 ]
 export const eventCsvHeaders = eventCsvColumns.map(column => required.includes(column) ? `${column}*` : column)
@@ -40,13 +39,13 @@ function instant(value: string | undefined) {
 function issueColumn(path: PropertyKey[]): string {
   const [root, field] = path
   const suffix = path.includes('en') ? '_en' : '_zh'
+  if (root === 'description') return `description${suffix}`
   if (['agenda', 'travel', 'participation', 'notices', 'audience', 'preparation'].includes(String(root))) return `${String(root)}${suffix}`
   if (root === 'registration') {
     if (field === 'note') return `registration_note${suffix}`
     if (field === 'joinReady') return 'join_ready'
     return Object.entries(registrationFields).find(([, value]) => value === field)?.[0] || String(field)
   }
-  if (root === 'availability') return `availability_${field === 'updatedAt' ? 'updated_at' : String(field)}`
   const localized = Object.entries(localizedFields).find(([, value]) => value === root)
   return localized ? `${localized[0]}${suffix}` : Object.entries(scalarFields).find(([, value]) => value === root)?.[0] || String(root)
 }
@@ -91,12 +90,6 @@ export function parseEventCsv(input: string, options: { source?: string; designE
     if (!publish) continue
     // Incomplete design fixtures exercise defensive rendering; published CSV content must be bilingual.
     for (const column of options.designExamples ? coreRequired : required) if (!cell(column)) fail(column, '必填 / Required')
-    const number = (column: string) => {
-      const value = cell(column)
-      if (!value) return undefined
-      if (!/^\d+$/.test(value)) fail(column, '請填整數 / Expected a whole number')
-      return Number(value)
-    }
     const pair = (zh: string | undefined, en: string | undefined, column: string): Localized | undefined => {
       if (!zh && en) fail(`${column}_zh`, '英文有內容時須填對應中文 / Chinese is required when English is supplied')
       if (zh && (!en || en === '-') && !options.designExamples) fail(`${column}_en`, '必填：請提供對應英文 / Required: provide the English translation')
@@ -118,16 +111,18 @@ export function parseEventCsv(input: string, options: { source?: string; designE
     const values: Record<string, unknown> = {}
     for (const [column, key] of Object.entries(scalarFields)) values[key] = column.endsWith('_at') ? instant(cell(column)) : cell(column)
     for (const [column, key] of Object.entries(localizedFields)) values[key] = localized(column)
-    values.capacity = number('capacity')
+    const descriptionZh = cell('description_zh') ? record.description_zh : undefined
+    const descriptionEn = cell('description_en') ? record.description_en : undefined
+    if (descriptionZh || descriptionEn) values.description = {
+      ...(descriptionZh ? { 'zh-TW': descriptionZh } : {}),
+      ...(descriptionEn ? { en: descriptionEn } : {}),
+    }
     values.listed = boolean('listed')
     const registration: Record<string, unknown> = {}
     for (const [column, key] of Object.entries(registrationFields)) registration[key] = column.endsWith('_at') ? instant(cell(column)) : cell(column)
     registration.joinReady = boolean('join_ready')
     registration.note = localized('registration_note')
     values.registration = registration
-    if (eventCsvColumns.some(column => column.startsWith('availability_') && cell(column))) {
-      values.availability = { remaining: number('availability_remaining'), source: cell('availability_source'), updatedAt: instant(cell('availability_updated_at')), valid: boolean('availability_valid') }
-    }
     for (const column of ['audience', 'preparation']) {
       const items = pairedLines(column).map(([zh, en]) => pair(zh, en, column))
       if (items.length) values[column] = items

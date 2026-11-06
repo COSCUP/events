@@ -3,6 +3,20 @@ import { text, type Event, type Locale } from './events.ts'
 const escape = (value: string) => value.replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/;/g, '\\;').replace(/,/g, '\\,')
 const stamp = (value: string | number) => new Date(value).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
 
+export function googleCalendarUrl(event: Event, locale: Locale, siteURL: string): string {
+  const permalink = `${siteURL.replace(/\/$/, '')}/${locale === 'en' ? 'en/' : ''}events/${event.slug}/`
+  const endNote = event.endsAt ? '' : locale === 'en' ? 'The end time has not been announced. Please confirm it before saving.' : '結束時間尚未公布，儲存前請確認並調整。'
+  const parameters = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: text(event.title, locale),
+    dates: `${stamp(event.startsAt)}/${stamp(event.endsAt || event.startsAt)}`,
+    stz: 'Asia/Taipei', etz: 'Asia/Taipei',
+    details: [text(event.intro, locale), endNote, permalink].filter(Boolean).join('\n\n'),
+    location: [text(event.venue, locale), text(event.address, locale)].filter(Boolean).join(' · '),
+  })
+  return `https://calendar.google.com/calendar/r/eventedit?${parameters}`
+}
+
 // RFC 5545 folds by UTF-8 octets, without splitting a multi-byte character.
 export function foldLine(line: string): string {
   const lines: string[] = []

@@ -1,4 +1,4 @@
-import { eventState, freshAvailability, hasFallback, registrationStatus, text, type Event, type Locale, type Localized } from './events.ts'
+import { eventState, hasFallback, registrationStatus, text, type Event, type Locale, type Localized } from './events.ts'
 
 const escape = (value: string) => value.replace(/([\\`*_[\]<>#|])/g, '\\$1')
 const inline = (value: string) => escape(value.replace(/\s+/g, ' ').trim())
@@ -15,8 +15,8 @@ export function llmsIndex(events: Event[], site: string, options: Options = {}):
     `Generated at ${new Date(now).toISOString()}. This is a static snapshot updated on deployment.`,
     'Dates use Asia/Taipei (UTC+8) unless an explicit offset is given. Published event content is available in Traditional Chinese and English.',
     'Registration takes place on the linked organizer website. A link alone does not mean registration is open; verify availability there.',
-    'Missing fees, capacity or end times are unknown, not free, unlimited or inferred. Remaining places expire after 15 minutes and are not live.',
-    '活動以主辦單位公告為準；報名、時間及名額請再次確認。', '',
+    'Missing fees or end times are unknown and must not be inferred.',
+    '活動以主辦單位公告為準；報名詳情與時間請至活動連結確認。', '',
     ...(!published.length ? ['目前沒有已公布的活動資料。 No published event records.', ''] : [
       '## Events / 活動', '',
       ...published.flatMap(event => (['zh-TW', 'en'] as const).map(locale => {
@@ -63,7 +63,6 @@ export function eventMarkdown(event: Event, locale: Locale, site: string, option
   field('Language / 語言', local(event.language))
   field('Language note / 語言補充', local(event.languageNote))
   field('Fee / 費用', local(event.fee))
-  field('Capacity / 名額', event.capacity)
   lines.push('', '## Registration / 報名', '')
   field('Mode / 方式', event.registration.mode === 'free' ? 'No registration required / 免報名 (does not imply free entry)' : 'External registration / 外部報名')
   field('Status at generation / 產生時狀態', registrationStatus(event, now))
@@ -74,13 +73,9 @@ export function eventMarkdown(event: Event, locale: Locale, site: string, option
   url('Official registration information / 官方報名資訊', event.registration.url)
   url('Waitlist / 候補', event.registration.waitlistUrl)
   if (event.registration.joinReady) url('Confirmed online entrance / 已確認的線上入口', event.registration.joinUrl)
-  const available = freshAvailability(event, now)
-  if (available) {
-    field('Remaining at observation / 觀測時剩餘', available.remaining)
-    field('Availability source / 名額來源', available.source)
-    field('Observed at / 觀測時間 (expires after 15 minutes; not live)', available.updatedAt)
-  }
   if (local(event.intro)) lines.push('', '## About this event / 活動簡介', '', escape(local(event.intro)))
+  const description = event.description?.[locale]
+  if (description) lines.push('', '## Event description / 活動介紹', '', description)
   for (const [key, title] of [['audience', 'Who it is for / 適合對象'], ['preparation', 'Preparation / 行前準備']] as const) {
     if (event[key]?.length) lines.push('', `## ${title}`, '', ...event[key].map(item => `- ${inline(local(item))}`))
   }

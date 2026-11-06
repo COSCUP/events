@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { introMode, hasFallback, dateLabel, monthDayLabel, taipeiDate, timeRange, timeLabel, freshAvailability, primaryAction, registrationStatus, upcomingEvents, type Fact, type Localized } from '#shared/events'
+import { introMode, hasFallback, dateLabel, monthDayLabel, taipeiDate, timeRange, timeLabel, primaryAction, registrationStatus, upcomingEvents, type Fact } from '#shared/events'
 const { locale, local, lang, t, path, events, now, conductLink } = useSite()
 const route = useRoute()
 const event = events.find(event => event.slug === route.params.slug)
 if (!event) throw createError({ statusCode: 404, statusMessage: 'Event not found' })
 const mode = computed(() => introMode(local(event.intro)))
+const description = computed(() => event.description?.[locale.value] || '')
 const fallback = computed(() => hasFallback(event, locale.value))
 const activeSection = ref('intro')
 const stickyVisible = ref(false)
 const registration = useTemplateRef<HTMLElement>('registration')
 const sections = computed(() => [
   ...(mode.value === 'long' ? [{ id: 'intro', title: t('intro') }] : []),
+  ...(description.value ? [{ id: 'description', title: t('description') }] : []),
   ...(event.audience?.length ? [{ id: 'audience', title: t('audience') }] : []),
   ...(event.preparation?.length ? [{ id: 'preparation', title: t('preparation') }] : []),
   ...(event.agenda?.length ? [{ id: 'agenda', title: t('agenda') }] : []),
@@ -18,19 +20,15 @@ const sections = computed(() => [
   ...(event.participation?.length ? [{ id: 'join', title: t('join') }] : []),
   ...(event.notices?.length ? [{ id: 'notes', title: t('notices') }] : []),
 ])
-const mobileSections = computed(() => sections.value.filter(section => ['intro', 'agenda', 'venue', 'join'].includes(section.id)))
+const mobileSections = computed(() => sections.value.filter(section => ['intro', 'description', 'agenda', 'venue', 'join'].includes(section.id)))
 const others = computed(() => upcomingEvents(events, now.value).filter(item => item.slug !== event.slug))
 const siblingDate = (date: string) => locale.value === 'en' ? monthDayLabel(date, locale.value) : `${taipeiDate(date).slice(5).replace('-', '.')} ${new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', weekday: 'short' }).format(new Date(date))}`
 const basicFacts = computed<Fact[]>(() => {
   const labels = (zh: string, en: string) => ({ 'zh-TW': zh, en })
-  const feeValue: Localized = { 'zh-TW': [event.fee?.['zh-TW'], event.capacity ? `名額 ${event.capacity} 人` : undefined].filter(Boolean).join(' · ') }
-  if (!event.fee || event.fee.en) feeValue.en = [event.fee?.en, event.capacity ? `Capacity ${event.capacity}` : undefined].filter(Boolean).join(' · ')
-  const remaining = freshAvailability(event, now.value)?.remaining
-  const remainingNote = remaining === undefined ? undefined : labels(`剩 ${remaining} 名`, `${remaining} places left`)
   return [
     { label: labels('地點', 'Venue'), value: event.venue, note: event.address },
     ...(event.language ? [{ label: labels('形式', 'Format'), value: event.language, note: event.languageNote }] : []),
-    ...(event.fee || event.capacity ? [{ label: labels(event.fee ? '費用' : '名額', event.fee ? 'Fee' : 'Capacity'), value: feeValue, note: remainingNote }] : []),
+    ...(event.fee ? [{ label: labels('費用', 'Fee'), value: event.fee }] : []),
     ...(event.registration.closesAt ? [{ label: labels('報名截止', 'Closes'), value: labels(`${monthDayLabel(event.registration.closesAt, 'zh-TW')} ${timeLabel(event.registration.closesAt)}`, `${monthDayLabel(event.registration.closesAt, 'en')} ${timeLabel(event.registration.closesAt)}`) }] : []),
   ]
 })
@@ -38,7 +36,7 @@ usePageMeta(() => local(event.title), () => local(event.intro) || `${local(event
 
 onMounted(() => {
   const action = registration.value?.querySelector('[data-primary-action]')
-  const past = document.querySelector('#past-events')
+  const past = document.querySelector('#past-events') || document.querySelector('.site-footer')
   const updateSticky = () => {
     stickyVisible.value = !!action && action.getBoundingClientRect().bottom < 0 && !!past && past.getBoundingClientRect().top > window.innerHeight
   }
@@ -77,6 +75,7 @@ onMounted(() => {
         <FactRows :rows="basicFacts" />
         <div v-if="others.length" class="other-events"><h2>{{ t('also') }}</h2><NuxtLink v-for="other in others" :key="other.slug" :to="path(`/events/${other.slug}/`)"><span class="mono secondary">{{ siblingDate(other.startsAt) }}</span><span :lang="lang(other.title)">{{ local(other.title) }} →</span></NuxtLink></div>
         <section v-if="mode === 'long'" id="intro" class="event-section" tabindex="-1"><h2>{{ t('intro') }}</h2><IntroText :text="local(event.intro)" :lang="lang(event.intro)" /></section>
+        <section v-if="description" id="description" class="event-section" tabindex="-1"><h2>{{ t('description') }}</h2><EventDescription :text="description" :lang="locale" /></section>
         <section v-if="event.audience?.length" id="audience" class="event-section" tabindex="-1"><h2>{{ t('audience') }}</h2><ul class="prose-list"><li v-for="(item, index) in event.audience" :key="index" :lang="lang(item)">{{ local(item) }}</li></ul></section>
         <section v-if="event.preparation?.length" id="preparation" class="event-section" tabindex="-1"><h2>{{ t('preparation') }}</h2><ul class="prose-list"><li v-for="(item, index) in event.preparation" :key="index" :lang="lang(item)">{{ local(item) }}</li></ul></section>
         <section v-if="event.agenda?.length" id="agenda" class="event-section" tabindex="-1"><h2>{{ t('agenda') }}</h2><dl class="agenda"><div v-for="(item, index) in event.agenda" :key="index"><dt class="mono">{{ item.time }}</dt><dd><span :lang="lang(item.title)">{{ local(item.title) }}</span><span v-if="item.note" class="fact-note" :lang="lang(item.note)">{{ local(item.note) }}</span></dd></div></dl></section>

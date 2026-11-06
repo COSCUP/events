@@ -7,7 +7,7 @@ The site includes responsive event listings and details, About COSCUP, the offic
 ## 填表上架活動
 
 1. 編輯根目錄的 [`event.csv`](event.csv)，一列一場活動；`*` 欄位為必填，活動名稱、簡介與地點皆須填中英雙語。其他選填內容若有填寫，也須提供對應英文。
-2. 完成並確認資訊後把 `publish` 改為 `true`。目前兩筆範例均為 `false`，不會自動公告。
+2. 完成並確認資訊後把 `publish` 改為 `true`。目前七筆範例均為 `false`，不會自動公告。
 3. 合併至 `main` 後，GitHub Actions 自動檢查、建置並部署 GitHub Pages。也可在 Actions 手動執行 **Validate and deploy Pages**，選擇 `main` 重建。
 
 完整欄位、議程填法與上架流程見 [event.csv 填寫說明](docs/event-csv.md)。無須編輯 JSON 或產出檔；必填或格式有誤時不部署，Action log 會指出列號與欄位。
@@ -23,7 +23,7 @@ npm run dev
 
 Open the local URL printed by Nuxt. The default deployment prefix is `/events/`.
 
-Development uses the labelled examples in `fixtures/events.csv`. Their details, registration states and capacity snapshots are **illustrative, not announcements**. Only these design fixtures allow incomplete content to exercise missing-content and translation-fallback layouts; `event.csv` always uses the stricter publication rules. Example registration links open COSCUP's KKTIX directory. Capacity figures are hidden when their original timestamps are not fresh; the site does not use a simulated clock.
+Development uses the labelled examples in `fixtures/events.csv`, parsed through the same CSV pipeline and rendered with the same components as production. All upcoming and past activities come from the CSV; their details and registration states are **illustrative, not announcements**. The listing includes seven upcoming examples: two with only required fields, several with selected optional sections, and two with full details. Events with `registration_mode=free` and no registration URL offer an **Add to calendar** menu with Google Calendar and an iCS download. Only the unlisted design fixtures allow incomplete content to exercise missing-content and translation-fallback layouts; `event.csv` always uses the stricter publication rules. Example registration links open COSCUP's KKTIX directory.
 
 Production uses **only rows with `publish=true` in `event.csv`**. The initial examples are drafts, so production renders the empty state until confirmed events are published. Set `EVENTS_DEMO=0` when running the development server to preview this catalog; CSV changes reload the server. Draft rows never enter the site output, but the repository itself is public.
 
@@ -52,17 +52,19 @@ Paths below are application paths, appended to the deployment prefix:
 
 For example, with the default prefix, an event URL is `/events/events/<slug>/`. The root `/events/` is a rendered listing and chooses the remembered language after the page becomes interactive. Explicit language URLs always take precedence over preferences.
 
-Example-only review URLs include `/events/?example=empty`, `/events/?example=single`, and the `simple-meetup`, `no-intro`, `translation-example`, and `online-gathering` detail slugs. These additional scenarios are not listed as upcoming events and are not generated in production.
+The `open-source-afternoon` and `documentation-circle` examples contain only required fields. `online-gathering`, `community-lightning-night`, and `open-source-tools-workshop` use different subsets of optional fields. The `simple-meetup`, `no-intro`, `translation-example`, and `long-translation-example` detail slugs remain unlisted defensive-rendering fixtures. List counts and past activities follow the CSV and current date; query parameters do not inject or replace event data.
 
 ## Publishing events
 
-The [CSV authoring guide](docs/event-csv.md) documents all 55 columns. The ten required fields are `slug`, `title_zh`, `title_en`, `intro_zh`, `intro_en`, `starts_at`, `format`, `venue_zh`, `venue_en`, and `registration_mode`; `registration_url` is also required for external registration in `info` or `open` status. Other content is optional, but every supplied localized field must include both Chinese and English, including individual list items and schedule notes. `publish=true` explicitly opts a record into the build.
+The [CSV authoring guide](docs/event-csv.md) documents all 52 columns. The ten required fields are `slug`, `title_zh`, `title_en`, `intro_zh`, `intro_en`, `starts_at`, `format`, `venue_zh`, `venue_en`, and `registration_mode`; `registration_url` is also required for external registration in `info` or `open` status. Other content is optional. Localized fields require both Chinese and English, including individual list items and schedule notes, except for the independently optional Markdown descriptions below. `publish=true` explicitly opts a record into the build.
+
+Use `description_zh` and `description_en` for a Markdown event description. Each field is independently optional: Chinese only, English only, both, or neither can be published. The current language's article appears in a separate **活動介紹 / Event description** section, including page navigation; a missing translation omits that section. Headings, lists, links, images, quotes, tables, and fenced code blocks are supported; raw HTML is displayed as text. Required `intro_zh` / `intro_en` remain the plain-text introduction used by listings, metadata, and calendars. Event Markdown for Agents includes the current language's description with its formatting preserved.
 
 Use UTF-8 CSV; spreadsheet quotes, commas, CRLF and multiline cells are supported. Local dates such as `2027-01-16 13:00` default to Taiwan (UTC+8); explicit offsets are preserved. Slugs must be unique and stable. External links must use HTTP or HTTPS. CSV parsing runs through the existing [event schema](shared/events.ts) before any pages are built.
 
-Missing required content or translations blocks publication; incomplete draft rows remain allowed. Optional sections are omitted when empty; missing fees, capacity or end times are never invented. Availability snapshots expire after 15 minutes; no live capacity integration is included. `listed=false` hides a published event from lists and feeds but leaves its detail pages public; use `publish=false` to remove it from the build entirely.
+Missing required content or translations blocks publication; incomplete draft rows remain allowed. Optional sections are omitted when empty; missing fees or end times are never invented. Registration details are handled by the linked organizer website. `listed=false` hides a published event from lists and feeds but leaves its detail pages public; use `publish=false` to remove it from the build entirely.
 
-For activities without registration, set `registration_mode=free` and leave `registration_url` blank. The primary action is **加入行事曆 / Add to calendar**, which downloads an `.ics` file directly. A confirmed online entrance may take the primary position while the detail page retains the calendar action. See the [registration-free event rules](docs/event-csv.md#免報名活動).
+For activities without registration, set `registration_mode=free` and leave `registration_url` blank. The primary action is **加入行事曆 / Add to calendar**, with Google Calendar and iCS download options. A confirmed online entrance may take the primary position while the detail page retains the calendar action. See the [registration-free event rules](docs/event-csv.md#免報名活動).
 
 Visible time-sensitive status refreshes in the browser every 30 seconds and when the tab returns to the foreground. HTML, RSS, subscription calendars, the sitemap and Agent files are static snapshots refreshed on deployment. Subscribers control their calendar polling interval.
 

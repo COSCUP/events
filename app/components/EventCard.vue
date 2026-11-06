@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { monthDayLabel, timeRange, timeLabel, plainIntro, taipeiDate, platform, type Event } from '#shared/events'
+import { monthDayLabel, timeRange, timeLabel, plainIntro, taipeiDate, platform, registrationStatus, type Event } from '#shared/events'
 const props = defineProps<{ event: Event }>()
-const { locale, local, lang, t, path } = useSite()
+const { locale, local, lang, t, path, now } = useSite()
 const parts = computed(() => taipeiDate(props.event.startsAt).split('-'))
 const month = computed(() => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Taipei', month: 'short' }).format(new Date(props.event.startsAt)))
 const excerpt = computed(() => {
@@ -26,14 +26,14 @@ const format = computed(() => locale.value === 'en' ? { 'in-person': 'In person'
       <p class="card-mobile-time mono">{{ timeRange(event, locale) }} · UTC+8</p>
       <dl class="card-facts">
         <div class="card-venue"><dt>{{ t('venue') }}</dt><dd :lang="lang(event.venue)">{{ local(event.venue) }}<span v-if="event.address" class="fact-note" :class="{ 'venue-address': event.format !== 'online' }" :lang="lang(event.address)">{{ local(event.address) }}</span></dd></div>
-        <div v-if="event.fee || event.capacity" class="card-fee"><dt>{{ event.fee ? t('fee') : t('capacity') }}</dt><dd><span v-if="event.fee" :lang="lang(event.fee)">{{ local(event.fee) }}</span><span v-if="event.capacity">{{ event.fee ? (locale === 'en' ? ' · ' : '・') : '' }}{{ t('capacity') }} {{ event.capacity }}{{ locale === 'en' ? '' : ' 人' }}</span></dd></div>
+        <div v-if="event.fee" class="card-fee"><dt>{{ t('fee') }}</dt><dd :lang="lang(event.fee)">{{ local(event.fee) }}</dd></div>
         <div v-if="event.registration.closesAt" class="card-deadline"><dt>{{ t('closes') }}</dt><dd>{{ monthDayLabel(event.registration.closesAt, locale) }} {{ timeLabel(event.registration.closesAt) }}</dd></div>
       </dl>
     </div>
     <div class="card-actions">
-      <AvailabilityLine :event="event" />
+      <div class="status-line"><StatusBadge :status="registrationStatus(event, now)" /></div>
       <EventPrimaryAction :event="event" />
-      <p v-if="event.registration.status === 'info' && platform(event)" class="tertiary">{{ platform(event) }} · {{ t('officialNote') }}</p>
+      <p v-if="event.registration.mode === 'external' && event.registration.status === 'info' && platform(event)" class="tertiary">{{ platform(event) }} · {{ t('officialNote') }}</p>
       <NuxtLink :id="`detail-${event.slug}`" class="detail-link" :to="path(`/events/${event.slug}/`)" data-remember-focus>{{ t('details') }} <span aria-hidden="true">→</span><span class="sr-only"> — {{ local(event.title) }}</span></NuxtLink>
     </div>
   </article>

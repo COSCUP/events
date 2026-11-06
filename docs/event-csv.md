@@ -4,7 +4,7 @@
 
 ## 上架流程
 
-1. 下載或複製 `event.csv`，保留其他人的活動列。檔案目前有兩筆完整示範，`publish=false`，不會上架。
+1. 下載或複製 `event.csv`，保留其他人的活動列。檔案目前有七筆中英雙語示範，涵蓋僅必填、部分選填與完整內容，皆為 `publish=false`，不會上架。
 2. 新增一列，填好核心欄位與已確認的資訊。未完成時讓 `publish` 保持 `false` 或空白。
 3. 準備上架時將 `publish` 設為 `true`，透過 Pull Request 合併到 `main`（有直接寫入權限也可以直接更新 main 的檔案）。
 4. GitHub Actions 的 **Validate and deploy Pages** 會驗證 CSV、產生雙語網頁、RSS、行事曆與 Agent 文件，成功後部署 GitHub Pages。只要 main 有更新就會觸發，包含 `event.csv`；也可在 Actions 按 **Run workflow** 並選 `main` 手動重建。
@@ -34,16 +34,66 @@
 
 所有 `*_at` 欄位皆可使用 `YYYY-MM-DD HH:mm`，或含秒、明確時區的 ISO 格式，例如 `2027-01-16T13:00:00+08:00`。請把試算表日期欄設為純文字，避免匯出成地區格式或日期序號；結束時間必須晚於開始時間。
 
+## 活動介紹：中英文 Markdown
+
+| 欄位 | 必填 | 用途 |
+| --- | --- | --- |
+| `description_zh` | 否 | 中文 Markdown 活動介紹，可在同一個儲存格內換行。 |
+| `description_en` | 否 | 英文 Markdown 活動介紹，可獨立填寫。 |
+
+兩欄各自選填，只填中文、只填英文、兩者都填或都留白，都能上架。網站只顯示目前語系的介紹；未提供該語系內容時，省略介紹區塊及其導覽項目。原本必填的 `intro_zh` / `intro_en` 保留為純文字簡介，用於清單、搜尋摘要與行事曆；較完整的介紹文章可放在 `description_*`。
+
+介紹會顯示在詳情頁獨立的「活動介紹」區塊，並加入本頁導覽。支援標題、段落、粗體、斜體、項目與編號清單、引用、連結、圖片、表格及程式碼區塊。文章標題會排在頁面及區塊標題之下；寬表格和程式碼可在手機橫向捲動。原始 HTML 會顯示為文字，不會執行腳本或嵌入 iframe。
+
+例如 `description_zh` 可填：
+
+````markdown
+# 一起參與開源
+
+歡迎**第一次貢獻的新手**與想交流經驗的朋友。
+
+## 你可以做什麼
+
+- 分享最近使用的工具
+- 帶著自己的問題來討論
+
+> 只想先聽聽也很歡迎。
+
+更多資訊請看 [COSCUP 官網](https://coscup.org/)。
+
+```bash
+git status
+```
+````
+
+`description_en` 可用同樣的 Markdown 語法填入英文內容，也可先留白。CSV 範例中的 `online-gathering` 與 `first-pull-request` 提供中英文章；`community-lightning-night` 只有中文介紹，`open-source-tools-workshop` 只有英文介紹；只有必填欄位的範例仍將兩欄留白。圖片請使用 `![替代文字](圖片網址)`，外部連結與圖片建議使用完整 HTTP(S) 網址。
+
+文章中的逗號、引號、直線與換行直接填在儲存格內，由試算表匯出 CSV 處理引號；不要使用其他結構化欄位的 `|` 分隔規則來拆分 Markdown。產生的活動 Markdown 會保留目前語系的原文章語法，供 `llms.txt` 連結的中英文 Agent 文件使用；缺少該語系的介紹時不補入另一語言。
+
 ## 免報名活動
 
 活動不需要報名時，將 `registration_mode` 設為 `free`，`registration_url` 與 `registration_status` 可留白；不需要為了顯示按鈕填入報名網址。`free` 表示免報名，活動是否收費仍由 `fee_zh` / `fee_en` 說明。
 
 - 一般免報名活動的列表卡片、詳情頁，以及顯示中的手機底部操作列，主要按鈕直接使用 **「加入行事曆」／「Add to calendar」**。
-- 點擊後下載該活動的 `.ics` 行事曆檔，包含活動名稱、開始時間、地點與活動頁連結；有提供結束時間才加入結束時間，不經過報名網站。
+- 點擊後開啟小下拉選單，提供 **Google Calendar** 與 **「iCS 下載」／「Download iCS」**。Google Calendar 會開啟預填活動的新增頁，由使用者儲存；iCS 下載可匯入 Apple 行事曆、Outlook 等工具。
+- 兩種方式都使用 CSV 的活動名稱、時間、地點、簡介與活動頁連結。未提供結束時間時，iCS 不產生結束欄位；Google Calendar 以開始時間作為編輯起點，並在說明提示使用者確認結束時間，不推定活動長度。
+- Google Calendar 連結採用[官方預填活動格式](https://developers.google.com/workspace/calendar/api/concepts/inviting-attendees-to-events#provide_a_link_for_users_to_add_the_event)，由使用者確認與儲存活動。
 - 主要按鈕已是行事曆時，不再重複顯示第二個行事曆按鈕，也不顯示外部報名資訊提示。
 - 若免報名的線上活動已提供 `join_url` 並明確設定 `join_ready=true`，沿用線上活動規則：主要按鈕為「進入線上活動」，詳情頁仍直接提供「加入行事曆」作為次要按鈕。
 
 已確認的取消、延期、結束、額滿或截止狀態仍優先處理，不因免報名而恢復可參加的主要按鈕。
+
+## 預覽示意資料
+
+本機預覽與 `generate:demo` 讀取 `fixtures/events.csv`，透過相同的 CSV 解析與頁面元件產生近期、過往、詳情及 Agent 文件。預覽中的活動均為示意資料；正式發布仍只讀根目錄 `event.csv` 中的 `publish=true` 列。
+
+- `open-source-afternoon`、`documentation-circle`：只填十個必填欄位與上架開關，其餘欄位全部空白。
+- `online-gathering`：免報名的線上活動，有結束時間與 Markdown 活動介紹。
+- `community-lightning-night`：混合活動，選填費用、語言、適合對象與報名截止。
+- `open-source-tools-workshop`：即將開放報名，選填報到、費用、行前準備與簡短議程。
+- `community-meetup-taipei`、`first-pull-request`：較完整的活動介紹與參加資訊。
+
+根目錄 `event.csv` 也包含以上七筆填寫範例。修改 CSV 後預覽會重載；沒有額外覆寫筆數、日期或活動狀態的預覽參數。
 
 ## 選填內容（填寫時須提供中英）
 
@@ -57,7 +107,6 @@
 | `language_zh`, `language_en` | 活動形式與使用語言，例如「實體・華語」/ `In person · Mandarin`。 |
 | `language_note_zh`, `language_note_en` | 語言補充，例如「部分講題英語」。 |
 | `fee_zh`, `fee_en` | 費用說明；未填不會推定免費。 |
-| `capacity` | 總名額，正整數；未填不會推定不限額。 |
 | `check_in` | 台灣時間的報到時間，24 小時制 `HH:mm`。 |
 | `audience_zh`, `audience_en` | 適合對象，儲存格內一行一項。 |
 | `preparation_zh`, `preparation_en` | 行前準備，儲存格內一行一項。 |
@@ -113,16 +162,12 @@ Venue map | See directions
 | `waitlist_url` | 額滿時的候補網址。 |
 | `join_url` | 線上參加入口。 |
 | `join_ready` | 已確認入口可用才填 `true`；預設 `false`。免報名活動可顯示進入活動按鈕。 |
-| `availability_remaining` | 名額快照，非負整數；不可超過總名額。 |
-| `availability_source` | 名額資料來源，如 KKTIX。 |
-| `availability_updated_at` | 名額快照觀測時間。前三個 availability 欄位需一併提供。 |
-| `availability_valid` | 快照是否有效，預設 `true`。只有 15 分鐘內的有效快照顯示剩餘數字；不含自動同步。一般填表者可把這四欄全部留白。 |
 | `state` | `scheduled`（預設）、`cancelled`、`postponed`、`ended`。未手動指定已結束時，網站依結束時間判斷；無結束時間則保留至活動當天的台灣時間 23:59:59。 |
 | `listed` | 預設 `true`；`false` 只從列表、RSS、行事曆、sitemap 與 llms 索引隱藏，詳情仍公開。要撤下整場活動請用 `publish=false`。 |
 | `record_url` | 活動紀錄網址。 |
 | `announcement_url` | 正式公告網址，供取消、延期等狀態參考。 |
 
-所有網址欄位只接受 HTTP(S)。取消、延期、截止與額滿會優先於一般報名狀態；過期名額不會把已確認的狀態改回可報名。
+所有網址欄位只接受 HTTP(S)。取消、延期、截止與額滿會優先於一般報名狀態；報名詳情交由連結的主辦單位網站處理。
 
 ## 本機檢查與 Agent 文件
 
@@ -140,4 +185,4 @@ npm run preview
 - `/events/events/<slug>/index.md`：中文完整活動內容。
 - `/events/en/events/<slug>/index.md`：英文完整活動內容。
 
-以上包含 GitHub Pages 的 `/events/` 前綴。HTML 也提供 `rel="describedby"` 和活動 Markdown 的 `rel="alternate"`，方便 Agents 發現。格式依據 [llms.txt 提案](https://llmstxt.org/)；這些檔案與頁面在同次部署更新，不是即時報名或名額 API。
+以上包含 GitHub Pages 的 `/events/` 前綴。HTML 也提供 `rel="describedby"` 和活動 Markdown 的 `rel="alternate"`，方便 Agents 發現。格式依據 [llms.txt 提案](https://llmstxt.org/)；這些檔案與頁面在同次部署更新，不是即時報名 API。

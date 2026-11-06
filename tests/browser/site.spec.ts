@@ -10,7 +10,7 @@ test('static deep links, internal navigation and locale context work under the P
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await page.goto('events/')
-  await expect(page.locator('.event-card')).toHaveCount(2)
+  await expect(page.locator('.event-card')).toHaveCount(7)
   await page.locator('#event-community-meetup-taipei').click()
   await expect(page).toHaveURL(/\/events\/events\/community-meetup-taipei\/$/)
   await page.locator('#conduct-entry').click()
@@ -85,8 +85,11 @@ test('a short desktop viewport can scroll the complete sticky sidebar and use it
 
 test('calendar download contains real timezone data and share has clipboard feedback', async ({ page }) => {
   await page.goto('events/community-meetup-taipei/')
-  const downloadEvent = page.waitForEvent('download')
   await page.getByRole('button', { name: '加入行事曆', exact: true }).click()
+  const menu = page.getByRole('menu', { name: '加入行事曆', exact: true })
+  await expect(menu.getByRole('menuitem', { name: /Google Calendar/ })).toHaveAttribute('href', /calendar\.google\.com\/calendar\/r\/eventedit\?/)
+  const downloadEvent = page.waitForEvent('download')
+  await menu.getByRole('menuitem', { name: /iCS 下載/ }).click()
   const download = await downloadEvent
   expect(download.suggestedFilename()).toBe('coscup-community-meetup-taipei.ics')
   const content = await readFile((await download.path())!, 'utf8')
@@ -132,15 +135,17 @@ test('mobile registration bar follows the primary action and retreats before pas
 })
 
 test('empty, single, minimal and untranslated data render without invented details', async ({ page }) => {
-  await page.goto('events/?example=empty')
+  await page.clock.setFixedTime(new Date('2027-01-01T00:00:00Z'))
+  await page.goto('events/')
   await expect(page.getByRole('heading', { name: '尚無排定的活動' })).toBeVisible()
   await expect(page.locator('.event-card')).toHaveCount(0)
-  await page.goto('events/?example=single')
+  await page.clock.setFixedTime(new Date('2026-12-18T00:00:00Z'))
+  await page.goto('events/')
   await expect(page.locator('.event-card')).toHaveCount(1)
+  await page.clock.setFixedTime(new Date('2026-11-12T10:05:00Z'))
   await page.goto('events/no-intro/')
   await expect(page.locator('#intro')).toHaveCount(0)
   await expect(page.locator('.short-intro')).toHaveCount(0)
-  await expect(page.locator('.remaining')).toHaveCount(0)
   await expect(page.getByRole('link', { name: /前往官方報名/ }).first()).toBeVisible()
   await page.goto('en/events/translation-example/')
   await expect(page.locator('.translation-notice')).toHaveCount(1)

@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 export type Locale = 'zh-TW' | 'en'
 const localized = z.object({ 'zh-TW': z.string().trim().min(1), en: z.string().trim().min(1).optional() })
+const markdownText = z.string().refine(value => value.trim().length > 0, 'Description must not be blank')
 const url = z.url().refine(value => /^https?:\/\//.test(value), 'Use an http(s) URL')
 const instant = z.iso.datetime({ offset: true })
 const fact = z.object({ label: localized, value: localized, note: localized.optional(), url: url.optional() })
@@ -10,6 +11,10 @@ export const eventSchema = z.object({
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   title: localized,
   intro: z.object({ 'zh-TW': z.string().trim(), en: z.string().trim().optional() }).optional(),
+  description: z.object({
+    'zh-TW': markdownText.optional(),
+    en: markdownText.optional(),
+  }).refine(value => Boolean(value['zh-TW'] || value.en), 'Provide at least one description').optional(),
   category: localized.optional(),
   startsAt: instant,
   endsAt: instant.optional(),
@@ -22,7 +27,6 @@ export const eventSchema = z.object({
   language: localized.optional(),
   languageNote: localized.optional(),
   fee: localized.optional(),
-  capacity: z.number().int().positive().optional(),
   checkIn: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),
   registration: z.object({
     mode: z.enum(['external', 'free']),
@@ -36,12 +40,6 @@ export const eventSchema = z.object({
     joinReady: z.boolean().default(false),
     note: localized.optional(),
   }),
-  availability: z.object({
-    remaining: z.number().int().nonnegative(),
-    source: z.string().trim().min(1),
-    updatedAt: instant,
-    valid: z.boolean().default(true),
-  }).optional(),
   audience: z.array(localized).optional(),
   preparation: z.array(localized).optional(),
   agenda: z.array(z.object({ time: z.string(), title: localized, note: localized.optional() })).optional(),
@@ -60,17 +58,13 @@ export const eventSchema = z.object({
   if (event.registration.joinReady && !event.registration.joinUrl) {
     context.addIssue({ code: 'custom', path: ['registration', 'joinUrl'], message: 'A confirmed online entrance needs a URL' })
   }
-  if (event.capacity && event.availability && event.availability.remaining > event.capacity) {
-    context.addIssue({ code: 'custom', path: ['availability', 'remaining'], message: 'Remaining exceeds capacity' })
-  }
 })
 
 export type Event = z.infer<typeof eventSchema>
 export type Localized = z.infer<typeof localized>
 export type Fact = z.infer<typeof fact>
-export type Status = 'info' | 'open' | 'soon' | 'full' | 'closed' | 'few' | 'free' | 'cancelled' | 'postponed' | 'ended'
+export type Status = 'info' | 'open' | 'soon' | 'full' | 'closed' | 'free' | 'cancelled' | 'postponed' | 'ended'
 export type EventAction = { kind: 'register' | 'official' | 'waitlist' | 'join' | 'calendar' | 'reminder'; url?: string }
-export const CAPACITY_FRESHNESS_MS = 15 * 60 * 1000
 
 export function parseEvents(input: unknown): Event[] {
   const events = z.array(eventSchema).parse(input)
@@ -91,7 +85,8 @@ export function hasFallback(event: Event, locale: Locale): boolean {
     if ('zh-TW' in value) return Boolean(value['zh-TW']) && !('en' in value && value.en)
     return Object.values(value).some(visit)
   }
-  return visit(event)
+  // Optional articles are shown only in their supplied language, without fallback.
+  return Object.entries(event).some(([key, value]) => key !== 'description' && visit(value))
 }
 export function introMode(intro: string): 'none' | 'short' | 'long' {
   const value = intro.trim()
@@ -107,13 +102,6 @@ export function eventState(event: Event, now: number): Event['state'] {
   const end = event.endsAt ? Date.parse(event.endsAt) : Date.parse(`${taipeiDate(event.startsAt)}T23:59:59+08:00`)
   return end <= now ? 'ended' : 'scheduled'
 }
-export function freshAvailability(event: Event, now: number, maxAge = CAPACITY_FRESHNESS_MS) {
-  const value = event.availability
-  if (!value || !value.valid || !value.source.trim() || !Number.isInteger(value.remaining) || value.remaining < 0) return undefined
-  const age = now - Date.parse(value.updatedAt)
-  if (!Number.isFinite(age) || age < 0 || age > maxAge || (event.capacity && value.remaining > event.capacity)) return undefined
-  return value
-}
 export function registrationStatus(event: Event, now: number): Status {
   const state = eventState(event, now)
   if (state !== 'scheduled') return state
@@ -122,10 +110,7 @@ export function registrationStatus(event: Event, now: number): Status {
   if (registration.closesAt && Date.parse(registration.closesAt) <= now) return 'closed'
   if (registration.mode === 'free') return 'free'
   if (registration.status === 'soon') return registration.opensAt && Date.parse(registration.opensAt) <= now ? 'info' : 'soon'
-  if (registration.status === 'open') {
-    const available = freshAvailability(event, now)
-    return available && event.capacity && available.remaining / event.capacity <= 0.2 ? 'few' : 'open'
-  }
+  if (registration.status === 'open') return 'open'
   return 'info'
 }
 export function primaryAction(event: Event, now: number): EventAction | undefined {

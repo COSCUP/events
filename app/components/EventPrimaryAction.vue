@@ -17,5 +17,6 @@ const label = computed(() => {
 </script>
 <template>
   <ExternalLink v-if="action?.url" class="button primary" :href="action.url" :title="demo ? t('demoAction') : undefined">{{ label }}</ExternalLink>
+  <CalendarAction v-else-if="action?.kind === 'calendar'" :event="event" primary />
   <button v-else-if="action" class="button primary" @click="download(event, action.kind === 'reminder')">{{ label }}</button>
 </template>
