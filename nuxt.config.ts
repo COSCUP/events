@@ -41,9 +41,9 @@ export default defineNuxtConfig({
     prerender: {
       failOnError: true,
       routes: [
-        '/', '/events/', '/en/events/', '/about/', '/en/about/',
+        '/', '/en/', '/about/', '/en/about/',
         '/code-of-conduct/', '/en/code-of-conduct/', '/calendar.ics', '/feed.xml', '/robots.txt', '/sitemap.xml', '/llms.txt',
-        ...events.flatMap(event => [`/events/${event.slug}/`, `/en/events/${event.slug}/`, `/events/${event.slug}/index.md`, `/en/events/${event.slug}/index.md`]),
+        ...events.flatMap(event => [`/${event.slug}/`, `/en/${event.slug}/`, `/${event.slug}/index.md`, `/en/${event.slug}/index.md`]),
       ].map(route => `${baseURL.replace(/\/$/, '')}${route}`),
     },
   },

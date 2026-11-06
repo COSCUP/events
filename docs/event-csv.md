@@ -11,7 +11,7 @@ Edit [`event.csv`](../event.csv) as UTF-8 CSV, one event per row. Preserve the h
 
 | Field | Value |
 | --- | --- |
-| `slug` | Unique, stable URL identifier: lowercase letters, digits and hyphens. |
+| `slug` | Unique, stable URL identifier: lowercase letters, digits and hyphens. `en`, `about` and `code-of-conduct` are reserved. |
 | `title_zh`, `title_en` | Event title. |
 | `intro_zh`, `intro_en` | Plain-text introduction, also used in listings and calendars. |
 | `starts_at` | Start date and time. |

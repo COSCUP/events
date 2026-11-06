@@ -8,7 +8,7 @@ const route = useRoute()
 const key = computed(() => locale.value === 'en' ? 'en' : 'zh')
 const data = computed(() => props.type === 'about' ? aboutData[key.value] : conductData[key.value])
 const fromEvent = computed(() => typeof route.query.from === 'string' ? events.find(event => event.slug === route.query.from) : undefined)
-const backTo = computed(() => fromEvent.value ? `${path(`/events/${fromEvent.value.slug}/`)}#${conductReturnId(route.query.entry, !!fromEvent.value.notices?.length)}` : path())
+const backTo = computed(() => fromEvent.value ? `${path(`/${fromEvent.value.slug}/`)}#${conductReturnId(route.query.entry, !!fromEvent.value.notices?.length)}` : path())
 const aboutAnchors = ['about-coscup', 'origins', 'open-source', 'pillars', 'organization', 'roles']
 const blocks = computed(() => {
   if (props.type === 'conduct') return conductData[key.value].blocks

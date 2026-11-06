@@ -20,12 +20,12 @@ export function llmsIndex(events: Event[], site: string, options: Options = {}):
       '## Events / 活動', '',
       ...published.flatMap(event => (['zh-TW', 'en'] as const).map(locale => {
         const prefix = locale === 'en' ? '/en' : ''
-        return `- ${link(`${text(event.title, locale)} (${locale})`, `${site}${prefix}/events/${event.slug}/index.md`)}: ${event.startsAt}; ${inline(text(event.venue, locale))}; ${eventState(event, now)}. Markdown details.`
+        return `- ${link(`${text(event.title, locale)} (${locale})`, `${site}${prefix}/${event.slug}/index.md`)}: ${event.startsAt}; ${inline(text(event.venue, locale))}; ${eventState(event, now)}. Markdown details.`
       })), '',
     ]),
     '## Website / 網站', '',
-    `- ${link('近期活動 / Upcoming events — 繁體中文', `${site}/events/`)}: Current event listing.`,
-    `- ${link('Upcoming events — English', `${site}/en/events/`)}: English event listing.`,
+    `- ${link('近期活動 / Upcoming events — 繁體中文', `${site}/`)}: Current event listing.`,
+    `- ${link('Upcoming events — English', `${site}/en/`)}: English event listing.`,
     `- ${link('關於 COSCUP / About COSCUP', `${site}/about/`)}: Official Chinese introduction.`,
     `- ${link('About COSCUP — English', `${site}/en/about/`)}: Official English introduction.`,
     `- ${link('行為準則 / Code of conduct', `${site}/code-of-conduct/`)}: Participation and reporting policy in Chinese.`,
@@ -48,7 +48,7 @@ export function eventMarkdown(event: Event, locale: Locale, site: string, option
   const url = (label: string, value?: string) => { if (value) lines.push(`- ${link(label, value)}`) }
   if (hasFallback(event, locale)) lines.push('Some fields are not translated into English. The original Chinese is retained.', '')
   lines.push(`Generated at ${new Date(now).toISOString()}; static snapshot. Verify current registration details with the organizer.`, '')
-  url('Web page / 活動網頁', `${site}${locale === 'en' ? '/en' : ''}/events/${event.slug}/`)
+  url('Web page / 活動網頁', `${site}${locale === 'en' ? '/en' : ''}/${event.slug}/`)
   field('Starts / 開始', event.startsAt)
   field('Ends / 結束', event.endsAt)
   field('Check-in / 報到 (Asia/Taipei)', event.checkIn)

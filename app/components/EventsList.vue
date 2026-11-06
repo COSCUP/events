@@ -38,7 +38,7 @@ usePageMeta(() => t('upcoming'), () => locale.value === 'en' ? 'Find COSCUP meet
             </div>
             <div class="last-event-actions">
               <ExternalLink v-if="previousEvent.recordUrl" class="button secondary-button" :href="previousEvent.recordUrl">{{ t('recap') }}</ExternalLink>
-              <NuxtLink class="text-link" :to="path(`/events/${previousEvent.slug}/`)">{{ locale === 'en' ? 'Event page' : '活動頁' }} →</NuxtLink>
+              <NuxtLink class="text-link" :to="path(`/${previousEvent.slug}/`)">{{ locale === 'en' ? 'Event page' : '活動頁' }} →</NuxtLink>
             </div>
           </article>
         </section>

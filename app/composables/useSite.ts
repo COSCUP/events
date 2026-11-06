@@ -58,7 +58,7 @@ export function useSite() {
   const t = (key: MessageKey) => messages[locale.value][key]
   const local = (value: Localized | undefined) => text(value, locale.value)
   const lang = (value: Localized | undefined) => textLang(value, locale.value)
-  const path = (value = '/events/') => `${locale.value === 'en' ? '/en' : ''}${value}`
+  const path = (value = '/') => `${locale.value === 'en' ? '/en' : ''}${value}`
   const asset = (value: string) => `${config.app.baseURL}${value.replace(/^\//, '')}`
   const siteRoot = `${config.public.siteURL.replace(/\/$/, '')}${config.app.baseURL.replace(/\/$/, '')}`
   const conductLink = (entry: ConductEntry) => {
@@ -72,7 +72,7 @@ export function usePageMeta(title: MaybeRefOrGetter<string>, description: MaybeR
   const { locale, siteRoot } = useSite()
   const route = useRoute()
   const cleanPath = computed(() => {
-    const pathname = route.path === '/' ? '/events/' : route.path.replace(/^\/en(?=\/)/, '')
+    const pathname = route.path.replace(/^\/en(?=\/|$)/, '')
     return `${pathname.replace(/\/$/, '')}/`
   })
   const canonical = computed(() => `${siteRoot}${locale.value === 'en' ? '/en' : ''}${cleanPath.value}`)

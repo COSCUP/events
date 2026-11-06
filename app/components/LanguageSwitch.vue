@@ -4,7 +4,7 @@ const route = useRoute()
 const targetLocale = computed(() => locale.value === 'en' ? 'zh-TW' : 'en')
 const label = computed(() => locale.value === 'en' ? '切換為繁體中文' : 'Switch to English')
 const target = computed(() => ({
-  path: locale.value === 'en' ? route.path.replace(/^\/en(?=\/)/, '') : `/en${route.path === '/' ? '/events/' : route.path}`,
+  path: locale.value === 'en' ? route.path.replace(/^\/en(?=\/|$)/, '') || '/' : `/en${route.path}`,
   query: route.query,
   hash: route.hash === '#changelog' ? '' : route.hash,
 }))

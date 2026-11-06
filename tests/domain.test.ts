@@ -24,6 +24,7 @@ const copy = () => structuredClone(base)
 test('all content is valid and duplicate slugs or unsafe URLs fail the build', () => {
   assert.ok(Array.isArray(parseEventCsv(readFileSync(new URL('../event.csv', import.meta.url), 'utf8'))))
   assert.throws(() => parseEvents([base, base]), /unique/)
+  for (const slug of ['en', 'about', 'code-of-conduct']) assert.equal(eventSchema.safeParse({ ...base, slug }).success, false)
   const invalid = copy(); invalid.registration.url = 'javascript:alert(1)'
   assert.equal(eventSchema.safeParse(invalid).success, false)
   const noURL = copy(); delete noURL.registration.url
@@ -89,6 +90,7 @@ test('calendar exports correct UTC, CRLF, escaped text, Unicode folding and stab
   assert.ok(ics.replace(/\r\n /g, '').includes('SUMMARY:測試\\,分號\\;反斜線\\\\\\n換行'))
   for (const line of ics.split('\r\n')) assert.ok(Buffer.byteLength(line) <= 75)
   assert.ok(ics.includes(`UID:${event.slug}@events.coscup.org`))
+  assert.ok(ics.replace(/\r\n /g, '').includes(`URL:https://coscup.github.io/events/${event.slug}/`))
   const reminder = calendar([base], 'en', 'https://coscup.github.io/events', now, true)
   assert.ok(!reminder.includes('BEGIN:VEVENT'), 'Do not fabricate an unknown registration opening time')
   const google = new URL(googleCalendarUrl(base, 'en', 'https://coscup.org/events'))
@@ -96,7 +98,7 @@ test('calendar exports correct UTC, CRLF, escaped text, Unicode folding and stab
   assert.equal(google.searchParams.get('dates'), '20261114T050000Z/20261114T093000Z')
   assert.equal(google.searchParams.get('text'), base.title.en)
   assert.equal(google.searchParams.get('stz'), 'Asia/Taipei')
-  assert.ok(google.searchParams.get('details')!.includes(`https://coscup.org/events/en/events/${base.slug}/`))
+  assert.ok(google.searchParams.get('details')!.includes(`https://coscup.org/events/en/${base.slug}/`))
 })
 test('locale fallback is per field; omitted fields do not trigger a warning', () => {
   const event = copy()
@@ -164,8 +166,8 @@ test('only explicitly published CSV records enter pages and agent indexes; incom
   assert.deepEqual(events.map(event => event.slug), ['csv-event'])
   const index = llmsIndex(events, 'https://example.org/custom', { now })
   assert.ok(index.startsWith('# COSCUP Events'))
-  assert.ok(index.includes('https://example.org/custom/events/csv-event/index.md'))
-  assert.ok(index.includes('https://example.org/custom/en/events/csv-event/index.md'))
+  assert.ok(index.includes('https://example.org/custom/csv-event/index.md'))
+  assert.ok(index.includes('https://example.org/custom/en/csv-event/index.md'))
   assert.ok(!index.includes('secret-draft') && !index.includes('unfinished'))
   assert.ok(!llmsIndex([{ ...events[0]!, listed: false }], 'https://example.org/custom', { now }).includes('csv-event'))
 })
@@ -175,7 +177,7 @@ test('agent details include localized content, preserve fallback and omit unconf
   const markdown = eventMarkdown(event, 'en', 'https://example.org/events', { now })
   assert.ok(markdown.includes(event.title.en!))
   assert.ok(markdown.includes(event.intro!.en!))
-  assert.ok(markdown.includes(`https://example.org/events/en/events/${event.slug}/`))
+  assert.ok(markdown.includes(`https://example.org/events/en/${event.slug}/`))
   assert.ok(!markdown.includes('not-ready'))
   delete event.intro!.en
   const fallback = eventMarkdown(event, 'en', 'https://example.org/events', { now })

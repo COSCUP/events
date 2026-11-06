@@ -17,7 +17,7 @@ test.beforeEach(async ({ page }) => {
 test('CSV listing, static deep links and policy return context work under the Pages base', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
-  await page.goto('events/')
+  await page.goto('./')
   await expect(page.locator('.event-card')).toHaveCount(upcomingEvents(events, now).length)
   test.skip(!event || !upcomingEvents(events, now).includes(event), 'No listed upcoming event')
   await page.locator(`#event-${event.slug}`).click()
@@ -34,36 +34,37 @@ test('CSV listing, static deep links and policy return context work under the Pa
   await expect(page.locator('main')).not.toHaveClass(/page-enter-active|page-leave-active/)
   await expect(page.getByRole('heading', { level: 1 })).toBeFocused()
   await page.getByRole('link', { name: '← Back to event' }).click()
-  await expect(page).toHaveURL(new RegExp(`/events/en/events/${event.slug}/#header-conduct$`))
+  await expect(page).toHaveURL(new RegExp(`/events/en/${event.slug}/#header-conduct$`))
   await expect(page.locator('#header-conduct')).toBeFocused()
   await page.reload()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(text(event.title, 'en'))
   expect(errors).toEqual([])
 })
 
-test('header and footer language switches preserve section anchors and explicit URLs win', async ({ page }) => {
+test('header and footer language switches preserve anchors and return to the site root', async ({ page }) => {
   const anchor = event?.description?.['zh-TW'] && event.description.en ? 'description' : event?.address || event?.mapUrl ? 'venue' : ''
   test.skip(!anchor, 'No shared section anchor')
-  await page.goto(`events/${event.slug}/?source=preview#${anchor}`)
+  await page.goto(`${event.slug}/?source=preview#${anchor}`)
   await page.locator('.site-header').getByRole('link', { name: 'Switch to English', exact: true }).click()
-  await expect(page).toHaveURL(new RegExp(`/events/en/events/${event.slug}/\\?source=preview#${anchor}$`))
+  await expect(page).toHaveURL(new RegExp(`/events/en/${event.slug}/\\?source=preview#${anchor}$`))
   await expect(page.locator(`#${anchor}`)).toBeFocused()
   const footerSwitch = page.locator('.site-footer').getByRole('link', { name: '切換為繁體中文', exact: true })
   await footerSwitch.focus()
   await footerSwitch.press('Enter')
-  await expect(page).toHaveURL(new RegExp(`/events/events/${event.slug}/\\?source=preview#${anchor}$`))
+  await expect(page).toHaveURL(new RegExp(`/events/${event.slug}/\\?source=preview#${anchor}$`))
   await expect(page.locator(`#${anchor}`)).toBeFocused()
   await page.locator('.site-footer').getByRole('link', { name: 'Switch to English', exact: true }).click()
-  await expect(page).toHaveURL(new RegExp(`/events/en/events/${event.slug}/\\?source=preview#${anchor}$`))
-  await page.goto('events/')
-  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW')
+  await expect(page).toHaveURL(new RegExp(`/events/en/${event.slug}/\\?source=preview#${anchor}$`))
   await page.goto('./')
-  await expect(page).toHaveURL(/\/en\/events\/$/)
+  await expect(page).toHaveURL(/\/events\/en\/$/)
+  await page.locator('.site-header').getByRole('link', { name: '切換為繁體中文', exact: true }).click()
+  await expect(page).toHaveURL(/\/events\/$/)
+  await expect(page.locator('html')).toHaveAttribute('lang', 'zh-TW')
 })
 
 test('calendar and sharing use the published event data', async ({ page }) => {
   test.skip(!event, 'No published event')
-  await page.goto(`events/${event.slug}/`)
+  await page.goto(`${event.slug}/`)
   await page.locator('.registration-panel').getByRole('button', { name: '加入行事曆', exact: true }).click()
   const menu = page.getByRole('menu', { name: '加入行事曆', exact: true })
   const google = new URL((await menu.getByRole('menuitem', { name: /Google Calendar/ }).getAttribute('href'))!)
@@ -88,7 +89,7 @@ test('calendar and sharing use the published event data', async ({ page }) => {
   await page.getByRole('button', { name: '分享', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: '分享活動' })
   await expect(dialog.getByRole('status')).toHaveText('已複製連結')
-  expect(await page.evaluate(() => (window as any).copiedURL)).toBe(`${new URL(page.url()).origin}/events/events/${event.slug}/`)
+  expect(await page.evaluate(() => (window as any).copiedURL)).toBe(`${new URL(page.url()).origin}/events/${event.slug}/`)
   expect(await page.evaluate(() => (window as any).nativeShareCalled)).toBeUndefined()
   await dialog.getByRole('button', { name: '複製連結', exact: true }).click()
   expect(await page.evaluate(() => (window as any).copyCount)).toBe(2)
@@ -99,7 +100,7 @@ test('calendar and sharing use the published event data', async ({ page }) => {
 test('share offers a selectable URL and a copy icon when clipboard access fails', async ({ page }) => {
   test.skip(!event, 'No published event')
   await page.setViewportSize({ width: 320, height: 900 })
-  await page.goto(`en/events/${event.slug}/`)
+  await page.goto(`en/${event.slug}/`)
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async () => { throw new Error('Denied') } } })
     Object.defineProperty(document, 'execCommand', { configurable: true, value: () => false })
@@ -123,12 +124,12 @@ test('share offers a selectable URL and a copy icon when clipboard access fails'
 test('optional fees and venue details follow the published CSV in both languages', async ({ page }) => {
   test.skip(!event, 'No published event')
   for (const [prefix, locale, feeLabel] of [['', 'zh-TW', '費用'], ['en/', 'en', 'Fee']] as const) {
-    await page.goto(`${prefix}events/`)
+    await page.goto(prefix || './')
     const card = page.locator('.event-card').filter({ has: page.locator(`#event-${event.slug}`) })
     if (event.listed && upcomingEvents(events, now).includes(event)) {
       await expect(card.locator('.card-fee')).toHaveCount(event.fee ? 1 : 0)
     }
-    await page.goto(`${prefix}events/${event.slug}/`)
+    await page.goto(`${prefix}${event.slug}/`)
     await expect(page.locator('.detail-body dt').filter({ hasText: new RegExp(`^${feeLabel}$`) })).toHaveCount(event.fee ? 1 : 0)
     if (event.fee) await expect(page.locator('.registration-note')).toContainText(text(event.fee, locale))
     else if (!event.registration.platform && !event.registration.closesAt) await expect(page.locator('.registration-note')).toHaveCount(0)
@@ -144,7 +145,7 @@ test('official documents retain their text and safe return links', async ({ page
   for (const [prefix, key] of [['', 'zh'], ['en/', 'en']]) {
     await page.goto(`${prefix}code-of-conduct/?from=https://evil.example`)
     for (const block of conduct[key].blocks) await expect(page.locator('.document-prose')).toContainText(block.text)
-    await expect(page.locator('.back-link')).toHaveAttribute('href', `/events/${prefix}events/`)
+    await expect(page.locator('.back-link')).toHaveAttribute('href', `/events/${prefix}`)
     await expect(page.locator('.mail-link')).toHaveAttribute('href', 'mailto:coc@coscup.org')
     await page.goto(`${prefix}about/`)
     for (const block of about[key].blocks.slice(3)) await expect(page.locator('.document-prose')).toContainText(block.text)
@@ -155,11 +156,13 @@ test('static feeds, Agent content and missing-page handling are complete', async
   for (const [route, expected] of [['calendar.ics', 'BEGIN:VCALENDAR'], ['feed.xml', '<rss'], ['sitemap.xml', '<urlset'], ['llms.txt', '# COSCUP Events']]) {
     const response = await request.get(route!)
     expect(response.status()).toBe(200)
-    expect(await response.text()).toContain(expected!)
+    const content = await response.text()
+    expect(content).toContain(expected!)
+    expect(content).not.toMatch(/\/events\/(?:en\/)?events\//)
   }
   for (const item of events) {
     for (const [prefix, locale] of [['', 'zh-TW'], ['en/', 'en']] as const) {
-      const response = await request.get(`${prefix}events/${item.slug}/index.md`)
+      const response = await request.get(`${prefix}${item.slug}/index.md`)
       expect(response.status()).toBe(200)
       const markdown = await response.text()
       if (item.description?.[locale]) expect(markdown).toContain(item.description[locale])
@@ -167,9 +170,9 @@ test('static feeds, Agent content and missing-page handling are complete', async
     }
   }
   const rootHTML = await (await request.get('./')).text()
-  expect(rootHTML).toContain('href="https://coscup.org/events/events/"')
-  expect(rootHTML).toContain('href="https://coscup.org/events/en/events/"')
-  const response = await page.goto('events/not-a-real-event/')
+  expect(rootHTML).toContain('href="https://coscup.org/events/"')
+  expect(rootHTML).toContain('href="https://coscup.org/events/en/"')
+  const response = await page.goto('not-a-real-event/')
   expect(response?.status()).toBe(404)
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
 })
@@ -178,7 +181,7 @@ for (const width of [320, 1440]) {
   test(`CSV pages stay within ${width}px and remain accessible`, async ({ page }) => {
     await mkdir('artifacts/screenshots', { recursive: true })
     await page.setViewportSize({ width, height: 900 })
-    const routes = ['events/', 'en/events/', ...(event ? [`events/${event.slug}/`, `en/events/${event.slug}/`] : [])]
+    const routes = ['./', 'en/', ...(event ? [`${event.slug}/`, `en/${event.slug}/`] : [])]
     for (const [index, route] of routes.entries()) {
       await page.goto(route)
       await page.evaluate(() => document.fonts.ready)

@@ -8,7 +8,7 @@ const instant = z.iso.datetime({ offset: true })
 const fact = z.object({ label: localized, value: localized, note: localized.optional(), url: url.optional() })
 
 export const eventSchema = z.object({
-  slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).refine(value => !['en', 'about', 'code-of-conduct'].includes(value), 'Slug is reserved for a site page'),
   title: localized,
   intro: z.object({ 'zh-TW': z.string().trim(), en: z.string().trim().optional() }).optional(),
   description: z.object({

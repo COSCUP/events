@@ -4,7 +4,7 @@ const escape = (value: string) => value.replace(/\\/g, '\\\\').replace(/\r?\n/g,
 const stamp = (value: string | number) => new Date(value).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
 
 export function googleCalendarUrl(event: Event, locale: Locale, siteURL: string): string {
-  const permalink = `${siteURL.replace(/\/$/, '')}/${locale === 'en' ? 'en/' : ''}events/${event.slug}/`
+  const permalink = `${siteURL.replace(/\/$/, '')}/${locale === 'en' ? 'en/' : ''}${event.slug}/`
   const endNote = event.endsAt ? '' : locale === 'en' ? 'The end time has not been announced. Please confirm it before saving.' : '結束時間尚未公布，儲存前請確認並調整。'
   const parameters = new URLSearchParams({
     action: 'TEMPLATE',
@@ -37,7 +37,7 @@ export function calendar(events: Event[], locale: Locale, siteURL: string, now =
     const start = reminder ? event.registration.opensAt : event.startsAt
     if (!start) continue
     const prefix = reminder ? (locale === 'en' ? 'Registration opens: ' : '報名開放：') : ''
-    const permalink = `${siteURL.replace(/\/$/, '')}/${locale === 'en' ? 'en/' : ''}events/${event.slug}/`
+    const permalink = `${siteURL.replace(/\/$/, '')}/${locale === 'en' ? 'en/' : ''}${event.slug}/`
     lines.push('BEGIN:VEVENT', `UID:${event.slug}${reminder ? '-registration' : ''}@events.coscup.org`, `DTSTAMP:${stamp(now)}`, `DTSTART:${stamp(start)}`)
     if (!reminder && event.endsAt) lines.push(`DTEND:${stamp(event.endsAt)}`)
     lines.push(`SUMMARY:${escape(prefix + text(event.title, locale))}`, `LOCATION:${escape([text(event.venue, locale), text(event.address, locale)].filter(Boolean).join(' · '))}`, `DESCRIPTION:${escape([text(event.intro, locale), permalink].filter(Boolean).join('\n\n'))}`, `URL:${permalink}`)

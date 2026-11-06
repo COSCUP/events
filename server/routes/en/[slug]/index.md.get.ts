@@ -1,3 +1,3 @@
 import { eventMarkdownHandler } from '../../../utils/event-markdown'
 
-export default eventMarkdownHandler('zh-TW')
+export default eventMarkdownHandler('en')

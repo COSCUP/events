@@ -21,7 +21,7 @@ const format = computed(() => locale.value === 'en' ? { 'in-person': 'In person'
     </div>
     <div class="card-info">
       <p class="event-kicker"><strong v-if="event.category" :lang="lang(event.category)">{{ local(event.category) }} <span aria-hidden="true"> · </span></strong>{{ format }}</p>
-      <h2><NuxtLink :id="`event-${event.slug}`" :to="path(`/events/${event.slug}/`)" :lang="lang(event.title)" data-remember-focus>{{ local(event.title) }}</NuxtLink></h2>
+      <h2><NuxtLink :id="`event-${event.slug}`" :to="path(`/${event.slug}/`)" :lang="lang(event.title)" data-remember-focus>{{ local(event.title) }}</NuxtLink></h2>
       <p v-if="local(event.intro).trim()" class="card-summary" :lang="lang(event.intro)">{{ excerpt }}</p>
       <p class="card-mobile-time mono">{{ timeRange(event, locale) }} · UTC+8</p>
       <dl class="card-facts">
@@ -34,7 +34,7 @@ const format = computed(() => locale.value === 'en' ? { 'in-person': 'In person'
       <div class="status-line"><StatusBadge :status="registrationStatus(event, now)" /></div>
       <EventPrimaryAction :event="event" />
       <p v-if="event.registration.mode === 'external' && event.registration.status === 'info'" class="tertiary">{{ t('officialNote') }}</p>
-      <NuxtLink :id="`detail-${event.slug}`" class="detail-link" :to="path(`/events/${event.slug}/`)" data-remember-focus>{{ t('details') }} <span aria-hidden="true">→</span><span class="sr-only"> — {{ local(event.title) }}</span></NuxtLink>
+      <NuxtLink :id="`detail-${event.slug}`" class="detail-link" :to="path(`/${event.slug}/`)" data-remember-focus>{{ t('details') }} <span aria-hidden="true">→</span><span class="sr-only"> — {{ local(event.title) }}</span></NuxtLink>
     </div>
   </article>
 </template>
