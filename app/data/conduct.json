@@ -261,21 +261,6 @@
         "kind": "reference",
         "text": "g0v 行為守則／g0v Code of Conduct (CoC)，CC BY 3.0",
         "url": "https://g0v.hackmd.io/s/COC"
-      },
-      {
-        "kind": "heading",
-        "text": "Changelog",
-        "anchor": "changelog"
-      },
-      {
-        "kind": "bullet",
-        "text": "v20230725 經各組推派與公開余工人群徵求後，召開 2 次工作坊後編修。",
-        "level": 0
-      },
-      {
-        "kind": "bullet",
-        "text": "v20240109 小更新 Typo 與大會文件對齊，統一用「講者」稱呼 Speaker。",
-        "level": 0
       }
     ]
   },

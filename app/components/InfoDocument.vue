@@ -16,7 +16,7 @@ const blocks = computed(() => {
   return aboutData[key.value].blocks.slice(3).map(block => ['h2', 'h3'].includes(block.kind) ? { ...block, anchor: aboutAnchors[heading++] } : block)
 })
 const headings = computed(() => blocks.value.filter(block => 'anchor' in block && block.anchor))
-const shortNames = computed(() => locale.value === 'en' ? ['Participants', 'Scope & timing', 'Expected behavior', 'Unacceptable behavior', 'How to report', 'Processing team', 'Our actions', 'References', 'Changelog'] : ['關於參與者', '適用時間與範圍', '期許的行為', '不容許的行為', '通報方式', '處理團隊', '我們的處理', '參考資料', 'Changelog'])
+const shortNames = computed(() => locale.value === 'en' ? ['Participants', 'Scope & timing', 'Expected behavior', 'Unacceptable behavior', 'How to report', 'Processing team', 'Our actions', 'References'] : ['關於參與者', '適用時間與範圍', '期許的行為', '不容許的行為', '通報方式', '處理團隊', '我們的處理', '參考資料'])
 const aboutCallout = computed(() => aboutData[key.value].blocks[2]!.text.split(/\n+/))
 usePageMeta(() => data.value.title, () => props.type === 'about' ? aboutData[key.value].blocks[4]!.text : (locale.value === 'en' ? 'COSCUP Code of Conduct · v20240109 · Reporting & support: coc@coscup.org' : 'COSCUP 社群守則・v20240109・通報與協助：coc@coscup.org'))
 </script>
@@ -25,7 +25,7 @@ usePageMeta(() => data.value.title, () => props.type === 'about' ? aboutData[key
     <div class="document-heading">
       <NuxtLink class="back-link" :to="backTo">← {{ fromEvent ? t('backEvent') : t('back') }}</NuxtLink>
       <h1 id="page-title" tabindex="-1">{{ data.title }}</h1>
-      <template v-if="type === 'conduct'"><p class="mono tertiary">v20240109 · CC BY 4.0</p><p class="tertiary">{{ locale === 'en' ? 'Official English translation from the Chinese version.' : 'COSCUP 官方原文' }}</p></template>
+      <p v-if="type === 'conduct'" class="mono tertiary">v20240109 · CC BY 4.0</p>
     </div>
     <aside class="document-aside">
       <div v-if="type === 'conduct'" class="document-callout">
@@ -36,10 +36,12 @@ usePageMeta(() => data.value.title, () => props.type === 'about' ? aboutData[key
     </aside>
     <article class="document-article">
       <DocumentBody :blocks="blocks" />
-      <section class="source-attribution" aria-labelledby="source-title"><h2 id="source-title">{{ type === 'conduct' ? t('sourceLicense') : t('source') }}</h2>
-        <template v-if="type === 'about'"><p>{{ locale === 'en' ? 'COSCUP 2026 · Official English text' : 'COSCUP 2026・官方中文原文' }}</p><ExternalLink :href="aboutData[key].source">{{ t('officialSource') }}</ExternalLink><p class="tertiary">MIT · Copyright © COSCUP</p></template>
-        <template v-else><p>{{ locale === 'en' ? 'COSCUP Code of Conduct · v20240109. Official text reproduced under CC BY 4.0. Layout adapted.' : 'COSCUP 社群守則・v20240109。依 CC BY 4.0 收錄官方原文，調整閱讀版面。' }}</p><ExternalLink href="https://hackmd.io/@coscup/cococo-zh">{{ locale === 'en' ? 'Original Chinese source' : '中文原文' }}</ExternalLink><ExternalLink href="https://hackmd.io/@coscup/cococo-en">{{ locale === 'en' ? 'Original English source' : '英文原文' }}</ExternalLink><ExternalLink href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</ExternalLink><ExternalLink v-if="locale !== 'en'" href="https://hackmd.io/@coscup/CoCoCo-zh-v20220430">前一版本 v20220430</ExternalLink></template>
+      <section v-if="type === 'about'" class="source-attribution" aria-labelledby="source-title"><h2 id="source-title">{{ t('source') }}</h2>
+        <p>{{ locale === 'en' ? 'COSCUP 2026 · Official English text' : 'COSCUP 2026・官方中文原文' }}</p><ExternalLink :href="aboutData[key].source">{{ t('officialSource') }}</ExternalLink><p class="tertiary">MIT · Copyright © COSCUP</p>
       </section>
+      <nav v-else class="source-attribution" aria-label="HackMD">
+        <ExternalLink :href="conductData[key].source">{{ locale === 'en' ? 'English (HackMD)' : '中文（HackMD）' }}</ExternalLink>
+      </nav>
     </article>
   </main>
 </template>

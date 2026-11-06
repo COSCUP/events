@@ -6,6 +6,7 @@ const event = events.find(event => event.slug === route.params.slug)
 if (!event) throw createError({ statusCode: 404, statusMessage: 'Event not found' })
 const mode = computed(() => introMode(local(event.intro)))
 const description = computed(() => event.description?.[locale.value] || '')
+const hasVenueDetails = Boolean(event.travel?.length || event.address || event.mapUrl)
 const fallback = computed(() => hasFallback(event, locale.value))
 const activeSection = ref('intro')
 const stickyVisible = ref(false)
@@ -16,7 +17,7 @@ const sections = computed(() => [
   ...(event.audience?.length ? [{ id: 'audience', title: t('audience') }] : []),
   ...(event.preparation?.length ? [{ id: 'preparation', title: t('preparation') }] : []),
   ...(event.agenda?.length ? [{ id: 'agenda', title: t('agenda') }] : []),
-  ...(event.travel?.length || event.address ? [{ id: 'venue', title: t('travel') }] : []),
+  ...(hasVenueDetails ? [{ id: 'venue', title: t('travel') }] : []),
   ...(event.participation?.length ? [{ id: 'join', title: t('join') }] : []),
   ...(event.notices?.length ? [{ id: 'notes', title: t('notices') }] : []),
 ])
@@ -79,7 +80,7 @@ onMounted(() => {
         <section v-if="event.audience?.length" id="audience" class="event-section" tabindex="-1"><h2>{{ t('audience') }}</h2><ul class="prose-list"><li v-for="(item, index) in event.audience" :key="index" :lang="lang(item)">{{ local(item) }}</li></ul></section>
         <section v-if="event.preparation?.length" id="preparation" class="event-section" tabindex="-1"><h2>{{ t('preparation') }}</h2><ul class="prose-list"><li v-for="(item, index) in event.preparation" :key="index" :lang="lang(item)">{{ local(item) }}</li></ul></section>
         <section v-if="event.agenda?.length" id="agenda" class="event-section" tabindex="-1"><h2>{{ t('agenda') }}</h2><dl class="agenda"><div v-for="(item, index) in event.agenda" :key="index"><dt class="mono">{{ item.time }}</dt><dd><span :lang="lang(item.title)">{{ local(item.title) }}</span><span v-if="item.note" class="fact-note" :lang="lang(item.note)">{{ local(item.note) }}</span></dd></div></dl></section>
-        <section v-if="event.travel?.length || event.address" id="venue" class="event-section" tabindex="-1"><h2>{{ t('travel') }}</h2><dl class="fact-rows"><div><dt>{{ locale === 'en' ? 'Address' : '地址' }}</dt><dd><span :lang="lang(event.venue)">{{ local(event.venue) }}</span><span v-if="event.address" class="fact-note" :lang="lang(event.address)">{{ local(event.address) }}</span><ExternalLink v-if="event.mapUrl" :href="event.mapUrl" class="map-link">{{ t('openMap') }}</ExternalLink></dd></div></dl><FactRows v-if="event.travel" :rows="event.travel" /></section>
+        <section v-if="hasVenueDetails" id="venue" class="event-section" tabindex="-1"><h2>{{ t('travel') }}</h2><dl class="fact-rows"><div><dt>{{ locale === 'en' ? 'Address' : '地址' }}</dt><dd><span :lang="lang(event.venue)">{{ local(event.venue) }}</span><span v-if="event.address" class="fact-note" :lang="lang(event.address)">{{ local(event.address) }}</span><ExternalLink v-if="event.mapUrl" :href="event.mapUrl" class="map-link">{{ t('openMap') }}</ExternalLink></dd></div></dl><FactRows v-if="event.travel" :rows="event.travel" /></section>
         <section v-if="event.participation?.length" id="join" class="event-section" tabindex="-1"><h2>{{ t('join') }}</h2><FactRows :rows="event.participation" /></section>
         <section v-if="event.notices?.length" id="notes" class="event-section" tabindex="-1"><h2>{{ t('notices') }}</h2><dl class="fact-rows"><div><dt>{{ t('conduct') }}</dt><dd>{{ t('applies') }}<NuxtLink id="conduct-entry" class="fact-link" :to="conductLink('notes')" data-remember-focus>{{ t('readConduct') }}</NuxtLink></dd></div></dl><FactRows :rows="event.notices" /></section>
       </div>

@@ -39,7 +39,7 @@ npm run generate:demo
 npm run preview:demo
 ```
 
-Production output is `.output/public`; example output is `.output-demo/public`. The preview server serves the same prefix as Pages and returns HTTP 404 for unknown files. It binds to `127.0.0.1:4173`; use `PORT=4174` to run another instance.
+Production output is `.output/public`; example output is `.output-demo/public`. Development uses `.nuxt/dev-output`, so starting the dev server preserves both static builds. The preview server serves the same prefix as Pages and returns HTTP 404 for unknown files. It binds to `127.0.0.1:4173`; use `PORT=4174` to run another instance.
 
 Paths below are application paths, appended to the deployment prefix:
 
@@ -104,7 +104,7 @@ No server, database, secrets or API tokens are required. The workflow uses GitHu
 ## Content and assets
 
 - About COSCUP reproduces the official Chinese and English text from the [2026 website](https://coscup.org/2026/about/), under the [COSCUP repository's MIT license](public/licenses/coscup-2026-MIT.txt).
-- The Code of Conduct preserves the official `v20240109` Chinese and English text, including its existing translation differences, references and Chinese changelog. It is attributed on each page under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- The Code of Conduct uses the `v20240109` Chinese and English text, with references and a link to the matching HackMD document in each language. The text is licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - COSCUP logos are official supplied assets. Trademark rights remain with their owner.
 - Social icons are from Tabler Icons, with the [MIT notice](public/licenses/tabler-MIT.txt) retained.
 - Noto Sans TC and IBM Plex Mono use the SIL Open Font License; copies are in `public/licenses/`.

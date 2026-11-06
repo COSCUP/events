@@ -2,7 +2,8 @@ import { fileURLToPath } from 'node:url'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { parseEventCsv } from './scripts/events-csv'
 
-const demo = process.env.EVENTS_DEMO === '1' || (process.env.NODE_ENV === 'development' && process.env.EVENTS_DEMO !== '0')
+const development = process.env.NODE_ENV === 'development'
+const demo = process.env.EVENTS_DEMO === '1' || (development && process.env.EVENTS_DEMO !== '0')
 const csvSource = fileURLToPath(new URL(demo ? './fixtures/events.csv' : './event.csv', import.meta.url))
 const events = parseEventCsv(readFileSync(csvSource, 'utf8'), { source: demo ? 'fixtures/events.csv' : 'event.csv', designExamples: demo })
 // Only publishable records enter the client/server bundles; the source CSV is never served.
@@ -33,7 +34,10 @@ export default defineNuxtConfig({
   typescript: { strict: true },
   nitro: {
     preset: 'static',
-    output: demo ? { dir: '.output-demo', publicDir: '.output-demo/public' } : undefined,
+    // Nitro clears its output on startup; keep dev away from both static builds.
+    output: development
+      ? { dir: '.nuxt/dev-output', publicDir: '.nuxt/dev-output/public' }
+      : demo ? { dir: '.output-demo', publicDir: '.output-demo/public' } : undefined,
     prerender: {
       failOnError: true,
       routes: [

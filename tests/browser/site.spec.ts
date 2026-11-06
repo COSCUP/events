@@ -157,7 +157,7 @@ test('mobile registration bar follows the primary action and retreats before pas
   await expect(page.locator('.sticky-action')).not.toBeVisible()
 })
 
-test('empty, single, minimal and untranslated data render without invented details', async ({ page }) => {
+test('empty, single, minimal and untranslated data render without inventing or hiding details', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2027-01-01T00:00:00Z'))
   await page.goto('events/')
   await expect(page.getByRole('heading', { name: '尚無排定的活動' })).toBeVisible()
@@ -178,6 +178,11 @@ test('empty, single, minimal and untranslated data render without invented detai
   await expect(page.locator('.registration-panel .secondary-actions').getByRole('button', { name: '加入行事曆', exact: true })).toHaveCount(0)
   await expect(page.locator('.registration-panel')).not.toContainText('報名資訊以官方頁面為準')
   await expect(page.getByRole('link', { name: /進入線上/ })).toHaveCount(0)
+  for (const prefix of ['', 'en/']) {
+    await page.goto(`${prefix}events/simple-meetup/`)
+    await expect(page.locator('#venue')).toBeVisible()
+    await expect(page.locator('#venue .map-link')).toHaveAttribute('href', 'https://www.google.com/maps/search/?api=1&query=NTUST+International+Building')
+  }
 })
 
 test('both official documents retain source text, lists and safe return links', async ({ page }) => {
