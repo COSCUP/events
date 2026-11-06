@@ -10,6 +10,10 @@
   --border: #dde5d8;
   --border-strong: #c3cfbd;
   --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --motion-fast: 120ms;
+  --motion-enter: 160ms;
+  --motion-exit: 80ms;
+  --motion-ease: cubic-bezier(.2, 0, 0, 1);
   font-family: 'Noto Sans TC Variable', system-ui, sans-serif;
   color: var(--deep);
   background: #fff;
@@ -62,6 +66,7 @@ li::marker { color: var(--brand); }
 .calendar-action { display: flex; min-width: 0; }
 .calendar-action > .button { width: 100%; }
 .calendar-chevron { flex-shrink: 0; margin-left: 4px; }
+.calendar-action [aria-expanded='true'] .calendar-chevron { transform: rotate(180deg); }
 .calendar-menu { position: fixed; margin: 0; padding: 6px; width: 224px; max-width: calc(100vw - 16px); border: 1px solid var(--border-strong); border-radius: 8px; background: #fff; color: var(--deep); box-shadow: 0 6px 24px #0c3c231f; }
 .calendar-menu [role='menuitem'] { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 4px; background: transparent; color: var(--deep); font-size: 14px; line-height: 24px; text-align: left; text-decoration: none; }
 .calendar-menu [role='menuitem']:hover, .calendar-menu [role='menuitem']:focus-visible { background: var(--subtle); }
@@ -422,6 +427,32 @@ li::marker { color: var(--brand); }
 @media (prefers-reduced-motion: no-preference) {
   .button, .language-button { transition: background-color 120ms ease, border-color 120ms ease; }
   .sticky-action { transition: transform 120ms ease, visibility 120ms ease; }
+}
+.calendar-chevron { transition: transform var(--motion-enter) var(--motion-ease); }
+.calendar-menu [role='menuitem'] { transition: background-color var(--motion-fast) ease; }
+.toast { transform: translate(-50%, 6px); transition: opacity var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease); }
+.toast.visible { transform: translate(-50%, 0); }
+/* Opacity keeps fixed controls and scroll positions stable during navigation. */
+.page-enter-active { transition: opacity var(--motion-enter) var(--motion-ease); }
+.page-leave-active { transition: opacity var(--motion-exit) ease-out; pointer-events: none; }
+.page-enter-from, .page-leave-to { opacity: 0; }
+.copy-dialog, .calendar-menu {
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition: opacity var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease);
+  transition: opacity var(--motion-fast) var(--motion-ease), transform var(--motion-fast) var(--motion-ease), display var(--motion-fast) allow-discrete, overlay var(--motion-fast) allow-discrete;
+}
+.copy-dialog[open], .calendar-menu:popover-open { opacity: 1; transform: none; pointer-events: auto; transition-duration: var(--motion-enter); }
+.copy-dialog::backdrop {
+  background: #0c3c2300;
+  transition: background-color var(--motion-fast) ease;
+  transition: background-color var(--motion-fast) ease, display var(--motion-fast) allow-discrete, overlay var(--motion-fast) allow-discrete;
+}
+.copy-dialog[open]::backdrop { background: #0c3c2366; transition-duration: var(--motion-enter); }
+@starting-style {
+  .copy-dialog[open], .calendar-menu:popover-open { opacity: 0; transform: translateY(6px); }
+  .copy-dialog[open]::backdrop { background: #0c3c2300; }
 }
 @media print {
   .site-header, .site-footer, .sticky-action, .secondary-actions, .section-nav, .past-events { display: none; }

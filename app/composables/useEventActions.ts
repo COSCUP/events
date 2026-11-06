@@ -5,6 +5,7 @@ export function useEventActions() {
   const { locale, t, siteRoot } = useSite()
   const message = useState('action-message', () => '')
   const copyURL = useState('copy-url', () => '')
+  const shareOpen = useState('share-open', () => false)
   const copyStatus = useState<'idle' | 'copied' | 'failed'>('copy-status', () => 'idle')
   let timer: ReturnType<typeof setTimeout> | undefined
   const announce = (value: string) => {
@@ -56,6 +57,7 @@ export function useEventActions() {
     url.hash = ''
     url.search = ''
     copyURL.value = url.href
+    shareOpen.value = true
     await copyLink(url.href)
   }
   return { download, share, copyLink }

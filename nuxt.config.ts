@@ -19,6 +19,7 @@ export default defineNuxtConfig({
   watch: [csvSource, fileURLToPath(new URL('./scripts/events-csv.ts', import.meta.url))],
   app: {
     baseURL,
+    pageTransition: { name: 'page', mode: 'out-in' },
     head: { meta: [{ name: 'theme-color', content: '#0C3C23' }] },
   },
   alias: { '#event-data': source },

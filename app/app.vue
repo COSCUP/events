@@ -1,16 +1,25 @@
 <script setup lang="ts">
 const { t, asset, now } = useSite()
+const { $restorePageFocus } = useNuxtApp()
+const route = useRoute()
 const message = useState('action-message', () => '')
 const copyURL = useState('copy-url', () => '')
+const shareOpen = useState('share-open', () => false)
 const copyStatus = useState<'idle' | 'copied' | 'failed'>('copy-status', () => 'idle')
 const { copyLink } = useEventActions()
 const dialog = useTemplateRef<HTMLDialogElement>('copy-dialog')
 const copyInput = useTemplateRef<HTMLInputElement>('copy-input')
 useHead({ link: [{ rel: 'icon', type: 'image/svg+xml', href: asset('favicon.svg') }, { rel: 'alternate', type: 'application/rss+xml', title: 'COSCUP Events', href: asset('feed.xml') }] })
-watch(copyURL, async (value) => {
-  if (value) { await nextTick(); dialog.value?.showModal(); copyInput.value?.select() }
+watch(() => route.path, () => { shareOpen.value = false })
+watch(shareOpen, async () => {
+  await nextTick()
+  if (shareOpen.value) { dialog.value?.showModal(); copyInput.value?.select() }
   else dialog.value?.close()
 })
+function shareClosed() {
+  // A queued close event must not dismiss a dialog that has already reopened.
+  if (!dialog.value?.open) shareOpen.value = false
+}
 async function copyAgain() {
   if (!await copyLink(copyURL.value)) {
     copyInput.value?.focus({ preventScroll: true })
@@ -29,10 +38,10 @@ onMounted(() => {
 <template>
   <a class="skip-link" href="#main">{{ t('skip') }}</a>
   <SiteHeader />
-  <NuxtPage :page-key="route => route.path" />
+  <NuxtPage :page-key="route => route.path" :transition="{ onAfterEnter: $restorePageFocus }" />
   <SiteFooter />
   <div class="toast" :class="{ visible: message }" role="status" aria-live="polite">{{ message }}</div>
-  <dialog ref="copy-dialog" class="copy-dialog" aria-labelledby="copy-title" @close="copyURL = ''; copyStatus = 'idle'">
+  <dialog ref="copy-dialog" class="copy-dialog" aria-labelledby="copy-title" :inert="!shareOpen" @close="shareClosed">
     <h2 id="copy-title">{{ t('shareTitle') }}</h2>
     <div class="copy-url-field">
       <input ref="copy-input" :value="copyURL" readonly :aria-label="t('eventURL')" @focus="($event.target as HTMLInputElement).select()">
@@ -41,6 +50,6 @@ onMounted(() => {
       </button>
     </div>
     <p class="copy-status secondary" role="status">{{ copyStatus === 'copied' ? t('copied') : copyStatus === 'failed' ? t('copyHelp') : '' }}</p>
-    <button class="button primary" @click="copyURL = ''">{{ t('close') }}</button>
+    <button class="button primary" @click="shareOpen = false">{{ t('close') }}</button>
   </dialog>
 </template>
